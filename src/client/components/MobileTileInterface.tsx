@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AnimePuzzle } from '../../shared/types/puzzle';
+import { FeedbackService } from '../services/feedbackService';
 
 interface MobileTileInterfaceProps {
   puzzle: AnimePuzzle;

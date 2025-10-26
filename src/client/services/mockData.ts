@@ -1,4 +1,5 @@
 import { GamePuzzle, GameStats, AnimePuzzle, CharacterQuiz } from '../../shared/types/puzzle';
+import { PuzzleTracker } from './puzzleTracker';
 
 // Mock anime puzzles
 const MOCK_ANIME_PUZZLES: AnimePuzzle[] = [
@@ -346,6 +347,13 @@ export class MockDataService {
         filteredPuzzles = filteredPuzzles.filter(p => p.anime === anime);
         console.log('📝 Found puzzles:', filteredPuzzles.map(p => `${p.anime} - ${p.character}`));
       }
+
+      // Filter out recently used puzzles for variety
+      const unusedPuzzles = PuzzleTracker.getUnusedPuzzles(filteredPuzzles);
+      if (unusedPuzzles.length > 0) {
+        filteredPuzzles = unusedPuzzles;
+        console.log('🎲 Using unused puzzles:', filteredPuzzles.length);
+      }
       
       // Smart fallback: try removing filters one by one
       if (filteredPuzzles.length === 0) {
@@ -373,7 +381,11 @@ export class MockDataService {
       const randomIndex = Math.floor(Math.random() * filteredPuzzles.length);
       const puzzle = filteredPuzzles[randomIndex];
       
+      // Mark this puzzle as used
+      PuzzleTracker.markPuzzleAsUsed(puzzle.id);
+      
       console.log('✅ Selected puzzle:', `${puzzle.anime} - ${puzzle.character}: "${puzzle.quote_original}"`);
+      console.log('📊 Used puzzles count:', PuzzleTracker.getUsedCount());
       
       return {
         type: 'word-puzzle',
@@ -393,6 +405,13 @@ export class MockDataService {
       // Filter by anime (if not Mixed)
       if (anime && anime !== 'Mixed') {
         filteredQuizzes = filteredQuizzes.filter(q => q.anime === anime);
+      }
+
+      // Filter out recently used quizzes for variety
+      const unusedQuizzes = PuzzleTracker.getUnusedPuzzles(filteredQuizzes);
+      if (unusedQuizzes.length > 0) {
+        filteredQuizzes = unusedQuizzes;
+        console.log('🎲 Using unused character quizzes:', filteredQuizzes.length);
       }
       
       // Smart fallback for character quizzes
@@ -420,6 +439,12 @@ export class MockDataService {
       
       const randomIndex = Math.floor(Math.random() * filteredQuizzes.length);
       const quiz = filteredQuizzes[randomIndex];
+      
+      // Mark this quiz as used
+      PuzzleTracker.markPuzzleAsUsed(quiz.id);
+      
+      console.log('✅ Selected character quiz:', `${quiz.anime} - ${quiz.character}`);
+      console.log('📊 Used puzzles count:', PuzzleTracker.getUsedCount());
       
       return {
         type: 'character-guess',
