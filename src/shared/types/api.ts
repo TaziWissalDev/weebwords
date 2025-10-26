@@ -1,16 +1,16 @@
-import { AnimePuzzle, PuzzleState, GameStats } from './puzzle';
+import { AnimePuzzle, PuzzleState, GameStats, GamePuzzle, CharacterQuiz } from './puzzle';
 
 export type InitResponse = {
   type: 'init';
   postId: string;
   username: string;
-  currentPuzzle: AnimePuzzle | null;
+  currentPuzzle: GamePuzzle | null;
   gameStats: GameStats;
 };
 
 export type GetPuzzleResponse = {
   type: 'puzzle';
-  puzzle: AnimePuzzle;
+  puzzle: GamePuzzle;
 };
 
 export type SubmitSolutionRequest = {
@@ -19,9 +19,26 @@ export type SubmitSolutionRequest = {
   hintsUsed: number;
 };
 
+export type SubmitCharacterGuessRequest = {
+  quizId: string;
+  guess: string;
+  hintsUsed: number;
+};
+
 export type SubmitSolutionResponse = {
   type: 'solution';
   isCorrect: boolean;
   score: number;
-  nextPuzzle?: AnimePuzzle;
+  nextPuzzle?: GamePuzzle;
+};
+
+export type GetHintRequest = {
+  quizId: string;
+  hintNumber: number;
+};
+
+export type GetHintResponse = {
+  type: 'hint';
+  hint: string;
+  characterResponse: string;
 };

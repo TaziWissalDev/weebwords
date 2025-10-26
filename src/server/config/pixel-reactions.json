@@ -1,0 +1,78 @@
+{
+  "characters": {
+    "Naruto Uzumaki": {
+      "correct": "naruto_cheer",
+      "fail": "naruto_disappointed"
+    },
+    "Sasuke Uchiha": {
+      "correct": "sasuke_smirk",
+      "fail": "sasuke_annoyed"
+    },
+    "Tanjiro Kamado": {
+      "correct": "tanjiro_smile",
+      "fail": "tanjiro_sigh"
+    },
+    "Inosuke Hashibira": {
+      "correct": "inosuke_laugh",
+      "fail": "inosuke_rage"
+    },
+    "Monkey D. Luffy": {
+      "correct": "luffy_grin",
+      "fail": "luffy_confused"
+    },
+    "Roronoa Zoro": {
+      "correct": "zoro_confident",
+      "fail": "zoro_lost"
+    },
+    "Eren Yeager": {
+      "correct": "eren_determined",
+      "fail": "eren_angry"
+    },
+    "Levi Ackerman": {
+      "correct": "levi_satisfied",
+      "fail": "levi_disgusted"
+    },
+    "Izuku Midoriya": {
+      "correct": "deku_excited",
+      "fail": "deku_nervous"
+    },
+    "Katsuki Bakugo": {
+      "correct": "bakugo_victory",
+      "fail": "bakugo_explosion"
+    },
+    "Light Yagami": {
+      "correct": "light_genius",
+      "fail": "light_frustrated"
+    },
+    "L": {
+      "correct": "l_thinking",
+      "fail": "l_suspicious"
+    }
+  },
+  "default": {
+    "correct": "anime_sparkle",
+    "fail": "anime_sweatdrop"
+  },
+  "puzzle_type_defaults": {
+    "quote_fill": {
+      "correct": "quote_complete",
+      "fail": "quote_incomplete"
+    },
+    "emoji_sensei": {
+      "correct": "emoji_master",
+      "fail": "emoji_confused"
+    },
+    "who_said_it": {
+      "correct": "speaker_identified",
+      "fail": "speaker_mystery"
+    },
+    "mood_match": {
+      "correct": "mood_perfect",
+      "fail": "mood_mismatch"
+    },
+    "who_am_i": {
+      "correct": "identity_revealed",
+      "fail": "identity_hidden"
+    }
+  }
+}

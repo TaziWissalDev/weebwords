@@ -12,7 +12,7 @@ export default defineConfig({
     target: 'node22',
     sourcemap: true,
     rollupOptions: {
-      external: [...builtinModules],
+      external: [...builtinModules, 'better-sqlite3'],
 
       output: {
         format: 'cjs',

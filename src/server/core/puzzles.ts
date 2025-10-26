@@ -1,4 +1,4 @@
-import { AnimePuzzle } from '../../shared/types/puzzle';
+import { AnimePuzzle, CharacterQuiz, GamePuzzle, QuizType } from '../../shared/types/puzzle';
 
 // Pre-generated anime puzzles database
 export const ANIME_PUZZLES: AnimePuzzle[] = [
@@ -174,17 +174,204 @@ export const ANIME_PUZZLES: AnimePuzzle[] = [
   }
 ];
 
-export function getRandomPuzzle(difficulty?: 'easy' | 'medium' | 'hard'): AnimePuzzle {
-  const filteredPuzzles = difficulty 
-    ? ANIME_PUZZLES.filter(p => p.difficulty === difficulty)
-    : ANIME_PUZZLES;
+// Character guessing quizzes database
+export const CHARACTER_QUIZZES: CharacterQuiz[] = [
+  {
+    id: 'char-naruto-001',
+    anime: 'Naruto',
+    character: 'Sasuke Uchiha',
+    difficulty: 'medium',
+    description: 'I am the last survivor of my clan, driven by revenge and the pursuit of power. My Sharingan eyes have witnessed unspeakable tragedy.',
+    characterVoice: 'Hmph... you want to know about me?',
+    hints: {
+      hint1: 'I possess a powerful bloodline limit that allows me to copy jutsu',
+      hint2: 'My older brother massacred our entire clan when I was just a child',
+      hint3: 'I left Konoha to gain power from Orochimaru',
+      finalHint: 'My name means "assistant" but I refuse to be anyone\'s shadow'
+    },
+    hintResponses: {
+      hint1Response: 'The Sharingan... it\'s the pride of the Uchiha clan. With these eyes, I can see through any technique.',
+      hint2Response: '*clenches fist* Itachi... that man took everything from me. My family, my childhood, my innocence.',
+      hint3Response: 'Power... I needed power to kill that man. Orochimaru promised me strength, even if it meant abandoning everything.',
+      finalHintResponse: 'Tch... you\'re persistent. Fine, I am Sasuke Uchiha, and I will restore my clan\'s honor!'
+    },
+    correctAnswer: 'Sasuke Uchiha',
+    alternativeAnswers: ['Sasuke', 'Uchiha Sasuke'],
+    source: 'https://anilist.co/anime/20/Naruto'
+  },
+  {
+    id: 'char-onepiece-001',
+    anime: 'One Piece',
+    character: 'Roronoa Zoro',
+    difficulty: 'easy',
+    description: 'I am a swordsman who dreams of becoming the world\'s greatest. I wield three swords and have a terrible sense of direction.',
+    characterVoice: 'Oi, you got a problem with my swords?',
+    hints: {
+      hint1: 'I use a unique three-sword fighting style',
+      hint2: 'I made a promise to a childhood friend who died',
+      hint3: 'I get lost even when walking in a straight line',
+      finalHint: 'I\'m the first mate of the Straw Hat Pirates'
+    },
+    hintResponses: {
+      hint1Response: 'Santoryu... Three Sword Style. One in each hand, one in my mouth. That\'s my way of the sword.',
+      hint2Response: '*touches sword* Kuina... I promised her I\'d become the world\'s greatest swordsman. I won\'t break that promise.',
+      hint3Response: 'Shut up about my sense of direction! I don\'t get lost, the destination moves!',
+      finalHintResponse: 'The name\'s Roronoa Zoro, future World\'s Greatest Swordsman and first mate of the future Pirate King!'
+    },
+    correctAnswer: 'Roronoa Zoro',
+    alternativeAnswers: ['Zoro', 'Roronoa'],
+    source: 'https://anilist.co/anime/21/One-Piece'
+  },
+  {
+    id: 'char-deathnote-001',
+    anime: 'Death Note',
+    character: 'L',
+    difficulty: 'hard',
+    description: 'I am the world\'s greatest detective, known only by a single letter. I have unusual habits and an insatiable sweet tooth.',
+    characterVoice: 'Interesting... you wish to test your deductive abilities against mine?',
+    hints: {
+      hint1: 'I sit in a peculiar crouched position and rarely wear shoes',
+      hint2: 'I have solved every case I\'ve taken, with a 100% success rate',
+      hint3: 'I believe Kira is among the Japanese police and students',
+      finalHint: 'I am known worldwide by a single letter of the alphabet'
+    },
+    hintResponses: {
+      hint1Response: 'This position increases my deductive reasoning by 40%. As for shoes... they\'re unnecessary when thinking.',
+      hint2Response: 'Justice will prevail. I have never failed to solve a case, and Kira will not be my first failure.',
+      hint3Response: 'The probability that Kira is a student is 7%... but Light Yagami is particularly interesting.',
+      finalHintResponse: 'I am L. The world\'s greatest detective. And I will catch Kira, no matter what it takes.'
+    },
+    correctAnswer: 'L',
+    alternativeAnswers: ['L Lawliet', 'Lawliet', 'Ryuzaki'],
+    source: 'https://anilist.co/anime/1535/Death-Note'
+  },
+  {
+    id: 'char-mha-001',
+    anime: 'My Hero Academia',
+    character: 'Katsuki Bakugo',
+    difficulty: 'easy',
+    description: 'I have an explosive personality to match my explosive Quirk. I refuse to lose to anyone, especially that damn Deku!',
+    characterVoice: 'HAH?! You wanna fight, extra?!',
+    hints: {
+      hint1: 'My Quirk allows me to create explosions from my palms',
+      hint2: 'I\'ve known Deku since we were kids and used to bully him',
+      hint3: 'I call most people "extras" because I think I\'m better than them',
+      finalHint: 'My hero name is Great Explosion Murder God Dynamight'
+    },
+    hintResponses: {
+      hint1Response: 'EXPLOSION! My sweat is like nitroglycerin, and I can detonate it at will! Pretty awesome, right?!',
+      hint2Response: 'Tch... Deku was just a quirkless loser back then. How was I supposed to know he\'d get a Quirk?!',
+      hint3Response: 'Because you ARE extras! I\'m gonna be the number one hero, so everyone else is just background characters!',
+      finalHintResponse: 'I\'m Katsuki Bakugo! And I\'m gonna surpass All Might and become the greatest hero ever! GOT IT?!'
+    },
+    correctAnswer: 'Katsuki Bakugo',
+    alternativeAnswers: ['Bakugo', 'Kacchan', 'Bakugou', 'Katsuki Bakugou'],
+    source: 'https://anilist.co/anime/21459/My-Hero-Academia'
+  },
+  {
+    id: 'char-aot-001',
+    anime: 'Attack on Titan',
+    character: 'Levi Ackerman',
+    difficulty: 'medium',
+    description: 'I am humanity\'s strongest soldier, known for my exceptional combat skills and obsession with cleanliness.',
+    characterVoice: 'Tch... you\'re wasting my time.',
+    hints: {
+      hint1: 'I\'m called "Humanity\'s Strongest Soldier"',
+      hint2: 'I have an obsession with cleaning and keeping things tidy',
+      hint3: 'I\'m the captain of the Special Operations Squad',
+      finalHint: 'I\'m abnormally short but incredibly deadly with ODM gear'
+    },
+    hintResponses: {
+      hint1Response: 'Strongest soldier? Tch, that\'s just a fact. I kill titans like they\'re oversized pests.',
+      hint2Response: 'Filth is disgusting. A clean environment leads to clear thinking and efficient titan killing.',
+      hint3Response: 'My squad follows my orders without question. That\'s how we stay alive in this hell.',
+      finalHintResponse: 'I\'m Levi Ackerman. Height doesn\'t matter when you can slice titans to pieces.'
+    },
+    correctAnswer: 'Levi Ackerman',
+    alternativeAnswers: ['Levi', 'Captain Levi', 'Ackerman'],
+    source: 'https://anilist.co/anime/16498/Attack-on-Titan'
+  },
+  {
+    id: 'char-demonslayer-001',
+    anime: 'Demon Slayer',
+    character: 'Inosuke Hashibira',
+    difficulty: 'easy',
+    description: 'I was raised by boars in the mountains! I wear a boar head mask and believe I\'m the strongest fighter alive!',
+    characterVoice: 'HAHAHA! I am the great Inosuke-sama!',
+    hints: {
+      hint1: 'I wear a boar head as a mask and have no shirt',
+      hint2: 'I created my own breathing technique called Beast Breathing',
+      hint3: 'I challenge everyone to fights and mispronounce names constantly',
+      finalHint: 'I was literally raised by wild boars in the mountains'
+    },
+    hintResponses: {
+      hint1Response: 'This boar head shows my strength! And shirts are for weaklings who can\'t handle the mountain cold!',
+      hint2Response: 'Beast Breathing! I made it myself because I\'m a genius! No fancy training needed when you\'re naturally amazing!',
+      hint3Response: 'Gonpachiro! Monitsu! I\'ll fight you all and prove I\'m the strongest! Bring it on!',
+      finalHintResponse: 'I am the great Inosuke Hashibira! King of the mountains! Raised by boars and stronger than any human!'
+    },
+    correctAnswer: 'Inosuke Hashibira',
+    alternativeAnswers: ['Inosuke', 'Hashibira'],
+    source: 'https://anilist.co/anime/101922/Demon-Slayer'
+  }
+];
+
+export function getRandomPuzzle(difficulty?: 'easy' | 'medium' | 'hard'): GamePuzzle {
+  // Randomly choose between word puzzle and character quiz
+  const quizType: QuizType = Math.random() < 0.5 ? 'word-puzzle' : 'character-guess';
   
-  const randomIndex = Math.floor(Math.random() * filteredPuzzles.length);
-  return filteredPuzzles[randomIndex];
+  if (quizType === 'word-puzzle') {
+    const filteredPuzzles = difficulty 
+      ? ANIME_PUZZLES.filter(p => p.difficulty === difficulty)
+      : ANIME_PUZZLES;
+    
+    const randomIndex = Math.floor(Math.random() * filteredPuzzles.length);
+    const puzzle = filteredPuzzles[randomIndex];
+    
+    return {
+      type: 'word-puzzle',
+      wordPuzzle: {
+        ...puzzle,
+        tiles: shuffleArray(puzzle.tiles)
+      }
+    };
+  } else {
+    const filteredQuizzes = difficulty 
+      ? CHARACTER_QUIZZES.filter(q => q.difficulty === difficulty)
+      : CHARACTER_QUIZZES;
+    
+    const randomIndex = Math.floor(Math.random() * filteredQuizzes.length);
+    const quiz = filteredQuizzes[randomIndex];
+    
+    return {
+      type: 'character-guess',
+      characterQuiz: quiz
+    };
+  }
 }
 
-export function getPuzzleById(id: string): AnimePuzzle | null {
-  return ANIME_PUZZLES.find(p => p.id === id) || null;
+export function getPuzzleById(id: string): GamePuzzle | null {
+  const wordPuzzle = ANIME_PUZZLES.find(p => p.id === id);
+  if (wordPuzzle) {
+    return {
+      type: 'word-puzzle',
+      wordPuzzle
+    };
+  }
+  
+  const characterQuiz = CHARACTER_QUIZZES.find(q => q.id === id);
+  if (characterQuiz) {
+    return {
+      type: 'character-guess',
+      characterQuiz
+    };
+  }
+  
+  return null;
+}
+
+export function getCharacterQuizById(id: string): CharacterQuiz | null {
+  return CHARACTER_QUIZZES.find(q => q.id === id) || null;
 }
 
 export function shuffleArray<T>(array: T[]): T[] {
@@ -198,4 +385,12 @@ export function shuffleArray<T>(array: T[]): T[] {
 
 export function validateSolution(puzzle: AnimePuzzle, solution: string[]): boolean {
   return JSON.stringify(solution) === JSON.stringify(puzzle.blanks);
+}
+
+export function validateCharacterGuess(quiz: CharacterQuiz, guess: string): boolean {
+  const normalizedGuess = guess.toLowerCase().trim();
+  const correctAnswer = quiz.correctAnswer.toLowerCase();
+  const alternatives = quiz.alternativeAnswers.map(alt => alt.toLowerCase());
+  
+  return normalizedGuess === correctAnswer || alternatives.includes(normalizedGuess);
 }
