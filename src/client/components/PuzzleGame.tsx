@@ -7,8 +7,14 @@ import { ScoreDisplay } from './ScoreDisplay';
 import { CharacterQuiz } from './CharacterQuiz';
 import { HeartsDisplay } from './HeartsDisplay';
 import { EnergyDisplay } from './EnergyDisplay';
+import { LeaderboardModal } from './LeaderboardModal';
+import { BadgeDisplay } from './BadgeDisplay';
+import { MobileTileInterface } from './MobileTileInterface';
 import { MockDataService } from '../services/mockData';
 import { getThemeForAnime, getThemeClasses } from '../services/themeService';
+import { BadgeLevel } from '../../shared/types/leaderboard';
+import { useIsMobile } from '../hooks/useIsMobile';
+import { AnimeBackground } from './AnimeBackground';
 
 interface PuzzleGameProps {
   initialPuzzle: GamePuzzle | null;
@@ -46,9 +52,12 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
   const [showHints, setShowHints] = useState(false);
   const [feedback, setFeedback] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [userBadges, setUserBadges] = useState<{ [anime: string]: BadgeLevel }>({});
 
   // Get theme classes for the selected anime
   const themeClasses = getThemeClasses(selectedAnime);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (initialPuzzle) {
@@ -275,8 +284,9 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
   // Render Word Puzzle
   if (currentGamePuzzle.type === 'word-puzzle' && currentGamePuzzle.wordPuzzle && puzzleState.currentPuzzle) {
     return (
-      <div className={`min-h-screen ${themeClasses.background}`}>
-        <div className="max-w-4xl mx-auto p-4 space-y-6">
+      <AnimeBackground theme={selectedAnime.toLowerCase().replace(/\s+/g, '') as any}>
+        <div className="min-h-screen">
+          <div className="max-w-4xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-6">
         {/* Header with Navigation and Stats */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
@@ -326,19 +336,32 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
           character={puzzleState.currentPuzzle.character}
         />
 
-        {/* Quote Display */}
-        <QuoteDisplay 
-          puzzle={puzzleState.currentPuzzle}
-          placedTiles={puzzleState.placedTiles}
-          onTileReturn={handleTileReturn}
-          onTileDrop={handleTileDrop}
-        />
+        {/* Quote Display and Tile Board - Mobile vs Desktop */}
+        {isMobile ? (
+          <MobileTileInterface
+            puzzle={puzzleState.currentPuzzle}
+            availableTiles={puzzleState.availableTiles}
+            placedTiles={puzzleState.placedTiles}
+            onTilePlacement={handleTileDrop}
+            onTileReturn={handleTileReturn}
+          />
+        ) : (
+          <>
+            {/* Quote Display */}
+            <QuoteDisplay 
+              puzzle={puzzleState.currentPuzzle}
+              placedTiles={puzzleState.placedTiles}
+              onTileReturn={handleTileReturn}
+              onTileDrop={handleTileDrop}
+            />
 
-        {/* Tile Board */}
-        <TileBoard 
-          availableTiles={puzzleState.availableTiles}
-          onTileDrag={(tile) => tile}
-        />
+            {/* Tile Board */}
+            <TileBoard 
+              availableTiles={puzzleState.availableTiles}
+              onTileDrag={(tile) => tile}
+            />
+          </>
+        )}
 
         {/* Hint Panel */}
         {showHints && (
@@ -346,11 +369,11 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3 justify-center">
+        <div className="flex flex-wrap gap-2 sm:gap-3 justify-center px-2">
           <button
             onClick={handleUseHint}
             disabled={showHints || puzzleState.isCompleted}
-            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="px-3 sm:px-4 py-2 anime-gradient-warning text-gray-900 rounded-lg anime-button font-bold disabled:bg-gray-300 disabled:cursor-not-allowed transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
           >
             💡 Use Hint ({puzzleState.hintsUsed})
           </button>
@@ -365,9 +388,16 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
           
           <button
             onClick={handleNewPuzzle}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            className="px-3 sm:px-4 py-2 anime-gradient-success text-white rounded-lg anime-button font-bold transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
           >
             🎲 New Puzzle
+          </button>
+          
+          <button
+            onClick={() => setShowLeaderboard(true)}
+            className="px-3 sm:px-4 py-2 anime-gradient-primary text-white rounded-lg anime-button font-bold transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
+          >
+            🏆 Leaderboard
           </button>
         </div>
 
@@ -381,18 +411,27 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
             {feedback}
           </div>
         )}
+
+          {/* Leaderboard Modal */}
+          <LeaderboardModal 
+            isOpen={showLeaderboard}
+            onClose={() => setShowLeaderboard(false)}
+          />
+          </div>
         </div>
-      </div>
+      </AnimeBackground>
     );
   }
 
   // Fallback loading state
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Loading puzzle...</p>
+    <AnimeBackground theme="default">
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="anime-text-glow">Loading epic anime puzzle...</p>
+        </div>
       </div>
-    </div>
+    </AnimeBackground>
   );
 };

@@ -1,4 +1,5 @@
 import { AnimePuzzle, PuzzleState, GameStats, GamePuzzle, CharacterQuiz } from './puzzle';
+import { LeaderboardResponse } from './leaderboard';
 
 export type InitResponse = {
   type: 'init';
@@ -42,3 +43,5 @@ export type GetHintResponse = {
   hint: string;
   characterResponse: string;
 };
+
+export type GetLeaderboardResponse = LeaderboardResponse;

@@ -1,10 +1,11 @@
 import express from 'express';
-import { InitResponse, GetPuzzleResponse, SubmitSolutionRequest, SubmitSolutionResponse, SubmitCharacterGuessRequest, GetHintRequest, GetHintResponse } from '../shared/types/api';
+import { InitResponse, GetPuzzleResponse, SubmitSolutionRequest, SubmitSolutionResponse, SubmitCharacterGuessRequest, GetHintRequest, GetHintResponse, GetLeaderboardResponse } from '../shared/types/api';
 import { DailyPack, ScoreSubmission, LeaderboardResponse, PuzzleType } from '../shared/types/daily-pack';
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
 import { getRandomPuzzle, getPuzzleById, validateSolution, shuffleArray, getCharacterQuizById, validateCharacterGuess } from './core/puzzles';
 import { GameStats } from '../shared/types/puzzle';
+import { updateUserAnimeStats, getAllLeaderboards, getUserBadges } from './core/leaderboard';
 // import { DatabaseService } from './services/database';
 // import { PackGenerator } from './services/pack-generator';
 
@@ -155,6 +156,9 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
         
         await redis.set(statsKey, JSON.stringify(gameStats));
         
+        // Update anime-specific leaderboard stats
+        await updateUserAnimeStats(username, puzzle.anime, score);
+        
         // Generate next puzzle
         const nextPuzzle = getRandomPuzzle();
         
@@ -300,6 +304,9 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
         
         await redis.set(statsKey, JSON.stringify(gameStats));
         
+        // Update anime-specific leaderboard stats
+        await updateUserAnimeStats(username, quiz.anime, score);
+        
         // Generate next puzzle
         const nextPuzzle = getRandomPuzzle();
         
@@ -333,6 +340,31 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
       res.status(500).json({
         status: 'error',
         message: 'Failed to submit character guess'
+      });
+    }
+  }
+);
+
+// Leaderboard API Endpoints
+router.get<{}, GetLeaderboardResponse | { status: string; message: string }>(
+  '/api/leaderboard',
+  async (_req, res): Promise<void> => {
+    try {
+      const username = await reddit.getCurrentUsername();
+      
+      const leaderboards = await getAllLeaderboards(username);
+      const userBadges = await getUserBadges(username);
+      
+      res.json({
+        type: 'leaderboard',
+        leaderboards,
+        userBadges
+      });
+    } catch (error) {
+      console.error('Error getting leaderboards:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to get leaderboards'
       });
     }
   }
