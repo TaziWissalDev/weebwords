@@ -10,72 +10,93 @@ interface SplashScreenProps {
 
 export const SplashScreen: React.FC<SplashScreenProps> = ({ onPlay, onDailyPack, username }) => {
   return (
-    <AnimeBackground theme="default">
-      <div className="min-h-screen flex items-center justify-center p-2 sm:p-4">
-        <div className="text-center text-white max-w-sm sm:max-w-md mx-auto w-full anime-card-hover">
-          {/* Logo/Title */}
-          <div className="mb-6 sm:mb-8 animate-bounce-in">
-            <h1 className="text-4xl sm:text-6xl font-black mb-4 anime-text-glow anime-text-outline bg-gradient-to-r from-yellow-300 via-pink-300 to-cyan-300 bg-clip-text text-transparent animate-float">
-              ANIME LINE
+    <div className="cyberpunk-bg min-h-screen relative overflow-hidden">
+      <div className="cyber-grid"></div>
+      <div className="scan-lines"></div>
+      <div className="anime-particles">
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={i}
+            className="anime-particle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 4}s`,
+            }}
+          />
+        ))}
+      </div>
+      
+      <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
+        <div className="text-center max-w-2xl mx-auto w-full">
+          {/* Futuristic Logo/Title */}
+          <div className="mb-8 animate-bounce-in">
+            <h1 className="anime-title text-6xl sm:text-8xl mb-6">
+              ANIME PIXEL QUEST
             </h1>
-            <div className="text-5xl sm:text-7xl mb-4 animate-glow">🎌⚡🌟</div>
-            <p className="text-lg sm:text-xl font-semibold anime-text-glow">
-              Complete epic anime quotes & guess legendary characters!
+            <div className="text-6xl mb-6 animate-float">🎌⚡🌟</div>
+            <p className="anime-text-neon text-xl">
+              COMPLETE EPIC ANIME QUOTES & GUESS LEGENDARY CHARACTERS!
             </p>
           </div>
 
-        {/* Welcome message */}
-        {username && username !== 'anonymous' && (
-          <div className="mb-4 sm:mb-6">
-            <p className="text-base sm:text-lg opacity-80">
-              Welcome back, <span className="font-semibold">{username}</span>! 👋
-            </p>
-          </div>
-        )}
+          {/* Welcome message */}
+          {username && username !== 'anonymous' && (
+            <div className="mb-6">
+              <p className="anime-text-pixel text-cyan-400">
+                WELCOME BACK, <span className="text-yellow-400">{username.toUpperCase()}</span>! 👋
+              </p>
+            </div>
+          )}
 
           {/* Badge Showcase */}
           {username && username !== 'anonymous' && (
-            <div className="mb-6 anime-card rounded-xl p-4 animate-slide-in">
+            <div className="mb-6 neon-card p-4 animate-slide-in">
               <BadgeShowcase username={username} />
             </div>
           )}
 
           {/* Features */}
-          <div className="mb-8 space-y-4 text-left anime-card rounded-xl p-6 animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center space-x-4 p-3 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 anime-border">
+          <div className="mb-8 space-y-3 neon-card p-6 animate-slide-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center space-x-4 p-3 rounded-lg holo-border">
               <span className="text-3xl animate-sparkle">🧩</span>
-              <span className="font-semibold text-gray-800">Complete epic anime quotes with word tiles</span>
+              <span className="anime-text-pixel text-sm text-cyan-300">COMPLETE EPIC ANIME QUOTES</span>
             </div>
-            <div className="flex items-center space-x-4 p-3 rounded-lg bg-gradient-to-r from-pink-500/20 to-red-500/20 anime-border">
+            <div className="flex items-center space-x-4 p-3 rounded-lg holo-border">
               <span className="text-3xl animate-sparkle" style={{ animationDelay: '0.5s' }}>🎭</span>
-              <span className="font-semibold text-gray-800">Guess legendary characters from clues</span>
+              <span className="anime-text-pixel text-sm text-purple-300">GUESS LEGENDARY CHARACTERS</span>
             </div>
-            <div className="flex items-center space-x-4 p-3 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 anime-border">
+            <div className="flex items-center space-x-4 p-3 rounded-lg holo-border">
               <span className="text-3xl animate-sparkle" style={{ animationDelay: '1s' }}>💡</span>
-              <span className="font-semibold text-gray-800">Get hints with character voice responses</span>
+              <span className="anime-text-pixel text-sm text-yellow-300">CHARACTER VOICE HINTS</span>
             </div>
-            <div className="flex items-center space-x-4 p-3 rounded-lg bg-gradient-to-r from-green-500/20 to-teal-500/20 anime-border">
+            <div className="flex items-center space-x-4 p-3 rounded-lg holo-border">
               <span className="text-3xl animate-sparkle" style={{ animationDelay: '1.5s' }}>🏆</span>
-              <span className="font-semibold text-gray-800">Earn badges & climb anime leaderboards</span>
+              <span className="anime-text-pixel text-sm text-green-300">EARN BADGES & CLIMB RANKS</span>
             </div>
-            <div className="flex items-center space-x-4 p-3 rounded-lg bg-gradient-to-r from-purple-500/20 to-indigo-500/20 anime-border">
+            <div className="flex items-center space-x-4 p-3 rounded-lg holo-border">
               <span className="text-3xl animate-sparkle" style={{ animationDelay: '2s' }}>📚</span>
-              <span className="font-semibold text-gray-800">Naruto, One Piece, JJK, Demon Slayer & more!</span>
+              <span className="anime-text-pixel text-sm text-pink-300">NARUTO • ONE PIECE • JJK • MORE!</span>
             </div>
-        </div>
+          </div>
 
-          {/* Play buttons */}
+          {/* Futuristic Play buttons */}
           <div className="space-y-4 animate-bounce-in" style={{ animationDelay: '0.4s' }}>
             <button
               onClick={onDailyPack}
-              className="w-full anime-button anime-gradient-secondary text-white font-black text-xl px-8 py-4 rounded-full transform hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-pink-500/50 anime-border animate-glow"
+              className="w-full pixel-button text-2xl py-6 animate-purple-glow"
+              style={{ 
+                background: 'linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%)',
+                color: '#fff',
+                textShadow: '0 0 10px rgba(0,0,0,0.8)'
+              }}
             >
               ⚡ DAILY CHALLENGE ⚡
             </button>
             
             <button
               onClick={onPlay}
-              className="w-full anime-button anime-gradient-warning text-gray-900 font-black text-xl px-8 py-4 rounded-full transform hover:scale-110 transition-all duration-300 shadow-2xl hover:shadow-yellow-500/50 anime-border animate-glow"
+              className="w-full pixel-button text-2xl py-6 animate-neon-glow"
               style={{ animationDelay: '0.5s' }}
             >
               🔥 START ADVENTURE 🔥
@@ -83,11 +104,11 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onPlay, onDailyPack,
           </div>
 
           {/* Footer */}
-          <div className="mt-8 text-sm font-semibold anime-text-glow animate-float">
-            <p>🌟 Become the ultimate anime master! 🌟</p>
+          <div className="mt-8 anime-text-pixel text-cyan-400 animate-float">
+            <p>🌟 BECOME THE ULTIMATE ANIME MASTER! 🌟</p>
           </div>
         </div>
       </div>
-    </AnimeBackground>
+    </div>
   );
 };

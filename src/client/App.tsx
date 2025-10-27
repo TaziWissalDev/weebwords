@@ -132,10 +132,17 @@ export const App = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-600 to-purple-600">
-        <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-xl">Loading Anime Quiz...</p>
+      <div className="cyberpunk-bg min-h-screen flex items-center justify-center relative overflow-hidden">
+        <div className="cyber-grid"></div>
+        <div className="scan-lines"></div>
+        <div className="text-center relative z-10">
+          <div className="anime-loading mx-auto mb-6" style={{ width: '64px', height: '64px' }}></div>
+          <p className="anime-text-neon text-2xl">LOADING ANIME QUEST...</p>
+          <div className="mt-4 flex justify-center space-x-1">
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+            <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -163,7 +170,20 @@ export const App = () => {
     
     case 'playing':
       return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="cyberpunk-bg min-h-screen relative overflow-hidden">
+          <div className="anime-particles">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={i}
+                className="anime-particle"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 4}s`,
+                }}
+              />
+            ))}
+          </div>
           <PuzzleGame 
             initialPuzzle={currentPuzzle}
             username={username}

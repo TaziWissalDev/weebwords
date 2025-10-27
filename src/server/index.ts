@@ -6,6 +6,7 @@ import { createPost } from './core/post';
 import { getRandomPuzzle, getPuzzleById, validateSolution, shuffleArray, getCharacterQuizById, validateCharacterGuess } from './core/puzzles';
 import { GameStats } from '../shared/types/puzzle';
 import { updateUserAnimeStats, getAllLeaderboards, getUserBadges } from './core/leaderboard';
+import { DailyPuzzleManager } from './services/dailyPuzzleManager';
 // import { DatabaseService } from './services/database';
 // import { PackGenerator } from './services/pack-generator';
 
@@ -18,9 +19,15 @@ app.use(express.urlencoded({ extended: true }));
 // Middleware for plain text body parsing
 app.use(express.text());
 
-// Initialize services - commented out for now
-// const db = new DatabaseService();
-// const packGenerator = new PackGenerator();
+// Initialize services
+let dailyPuzzleManager: DailyPuzzleManager | null = null;
+
+// Initialize daily puzzle manager if AI keys are available
+try {
+  dailyPuzzleManager = new DailyPuzzleManager();
+} catch (error) {
+  console.warn('⚠️ Daily puzzle manager not initialized:', error.message);
+}
 
 const router = express.Router();
 
@@ -84,10 +91,30 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
 
 router.get<{}, GetPuzzleResponse | { status: string; message: string }>(
   '/api/puzzle/new',
-  async (_req, res): Promise<void> => {
+  async (req, res): Promise<void> => {
     try {
       const username = await reddit.getCurrentUsername();
-      const puzzle = getRandomPuzzle();
+      const { anime, difficulty, useDailyPuzzles } = req.query;
+      
+      let puzzle;
+      
+      // Try to use daily puzzles if available and requested
+      if (useDailyPuzzles === 'true' && dailyPuzzleManager) {
+        try {
+          puzzle = await dailyPuzzleManager.getRandomPuzzleFromToday(
+            anime as string, 
+            difficulty as string
+          );
+          console.log('🎯 Using AI-generated daily puzzle');
+        } catch (error) {
+          console.log('⚠️ Daily puzzle not available, falling back to static puzzles');
+          puzzle = getRandomPuzzle();
+        }
+      } else {
+        // Use static puzzles
+        puzzle = getRandomPuzzle();
+        console.log('📚 Using static puzzle');
+      }
       
       // Store as current puzzle
       const currentPuzzleKey = `current_puzzle:${username}`;
@@ -369,6 +396,108 @@ router.get<{}, GetLeaderboardResponse | { status: string; message: string }>(
     }
   }
 );
+
+// Daily Puzzle API Endpoints
+router.get('/api/daily-puzzles', async (_req, res): Promise<void> => {
+  try {
+    if (!dailyPuzzleManager) {
+      res.status(503).json({
+        status: 'error',
+        message: 'Daily puzzle generation not available - no AI API keys configured'
+      });
+      return;
+    }
+
+    const puzzles = await dailyPuzzleManager.getTodaysPuzzles();
+    res.json(puzzles);
+  } catch (error) {
+    console.error('Error getting daily puzzles:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get daily puzzles'
+    });
+  }
+});
+
+router.get('/api/daily-puzzles/random', async (req, res): Promise<void> => {
+  try {
+    if (!dailyPuzzleManager) {
+      res.status(503).json({
+        status: 'error',
+        message: 'Daily puzzle generation not available - no AI API keys configured'
+      });
+      return;
+    }
+
+    const { anime, difficulty } = req.query;
+    const puzzle = await dailyPuzzleManager.getRandomPuzzleFromToday(
+      anime as string, 
+      difficulty as string
+    );
+    
+    res.json({
+      type: 'daily-puzzle',
+      puzzle
+    });
+  } catch (error) {
+    console.error('Error getting random daily puzzle:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get random daily puzzle'
+    });
+  }
+});
+
+router.get('/api/daily-puzzles/status', async (_req, res): Promise<void> => {
+  try {
+    if (!dailyPuzzleManager) {
+      res.json({
+        available: false,
+        reason: 'No AI API keys configured'
+      });
+      return;
+    }
+
+    const status = await dailyPuzzleManager.getGenerationStatus();
+    res.json({
+      available: true,
+      ...status
+    });
+  } catch (error) {
+    console.error('Error getting daily puzzle status:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get daily puzzle status'
+    });
+  }
+});
+
+router.post('/api/daily-puzzles/regenerate', async (_req, res): Promise<void> => {
+  try {
+    if (!dailyPuzzleManager) {
+      res.status(503).json({
+        status: 'error',
+        message: 'Daily puzzle generation not available - no AI API keys configured'
+      });
+      return;
+    }
+
+    console.log('🔄 Manual regeneration requested');
+    const puzzles = await dailyPuzzleManager.forceRegenerateToday();
+    
+    res.json({
+      status: 'success',
+      message: 'Daily puzzles regenerated successfully',
+      totalPuzzles: puzzles.totalPuzzles
+    });
+  } catch (error) {
+    console.error('Error regenerating daily puzzles:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to regenerate daily puzzles'
+    });
+  }
+});
 
 // Daily Pack API Endpoints - commented out for now since we're using mock data
 /*

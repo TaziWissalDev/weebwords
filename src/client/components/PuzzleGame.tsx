@@ -411,42 +411,47 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
       <AnimeBackground theme={selectedAnime.toLowerCase().replace(/\s+/g, '') as any}>
         <div className="min-h-screen">
           <div className="max-w-4xl mx-auto p-2 sm:p-4 space-y-4 sm:space-y-6">
-            {/* Header with Navigation and Stats */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={onBackToDifficulty}
-                  className="flex items-center space-x-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors"
-                >
-                  <span>←</span>
-                  <span>Back</span>
-                </button>
+            {/* Futuristic Header with Navigation and Stats */}
+            <div className="neon-card p-4 mb-6 relative overflow-hidden">
+              <div className="cyber-grid"></div>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={onBackToDifficulty}
+                      className="neon-button flex items-center space-x-2"
+                    >
+                      <span>←</span>
+                      <span>Back</span>
+                    </button>
 
-                <button
-                  onClick={onShowBadges}
-                  className={`flex items-center space-x-2 px-4 py-2 ${themeClasses.primary} hover:opacity-90 text-white rounded-lg transition-all`}
-                >
-                  <span>🏆</span>
-                  <span>Badges</span>
-                </button>
-              </div>
+                    <button
+                      onClick={onShowBadges}
+                      className="pixel-button flex items-center space-x-2"
+                    >
+                      <span>🏆</span>
+                      <span>Badges</span>
+                    </button>
+                  </div>
 
-              <div className="text-center">
-                <h1 className={`text-3xl ${themeClasses.primaryText} text-gray-900 mb-2`}>
-                  {selectedAnime} Quiz
-                </h1>
-                <p className="text-gray-600">
-                  Complete the anime quote by dragging tiles to the blanks!
-                </p>
-              </div>
+                  <div className="text-center">
+                    <h1 className="anime-title mb-2">
+                      {selectedAnime.toUpperCase()}
+                    </h1>
+                    <p className="anime-text-neon text-sm">
+                      Complete the anime quote by dragging tiles to the blanks!
+                    </p>
+                  </div>
 
-              <div className="flex flex-col space-y-2">
-                <HeartsDisplay hearts={gameStats.hearts} maxHearts={gameStats.maxHearts} />
-                <EnergyDisplay
-                  energy={gameStats.energy}
-                  maxEnergy={gameStats.maxEnergy}
-                  lastReset={gameStats.lastEnergyReset}
-                />
+                  <div className="flex flex-col space-y-2">
+                    <HeartsDisplay hearts={gameStats.hearts} maxHearts={gameStats.maxHearts} />
+                    <EnergyDisplay
+                      energy={gameStats.energy}
+                      maxEnergy={gameStats.maxEnergy}
+                      lastReset={gameStats.lastEnergyReset}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -489,55 +494,68 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
             {/* Hint Panel */}
             {showHints && <HintPanel hints={puzzleState.currentPuzzle.hints} />}
 
-            {/* Action Buttons */}
-            <div className="flex flex-wrap gap-2 sm:gap-3 justify-center px-2">
+            {/* Futuristic Action Buttons */}
+            <div className="flex flex-wrap gap-3 justify-center px-2">
               <button
                 onClick={handleUseHint}
                 disabled={showHints || puzzleState.isCompleted}
-                className="px-3 sm:px-4 py-2 anime-gradient-warning text-gray-900 rounded-lg anime-button font-bold disabled:bg-gray-300 disabled:cursor-not-allowed transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
+                className="pixel-button disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                💡 Use Hint ({puzzleState.hintsUsed})
+                💡 USE HINT ({puzzleState.hintsUsed})
               </button>
 
               <button
                 onClick={handleSubmitSolution}
                 disabled={isSubmitting || puzzleState.isCompleted}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="anime-button disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Checking...' : 'Submit Answer'}
+                {isSubmitting ? (
+                  <span className="flex items-center space-x-2">
+                    <div className="anime-loading"></div>
+                    <span>CHECKING...</span>
+                  </span>
+                ) : (
+                  'SUBMIT ANSWER'
+                )}
               </button>
 
               <button
                 onClick={handleNewPuzzle}
-                className="px-3 sm:px-4 py-2 anime-gradient-success text-white rounded-lg anime-button font-bold transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
+                className="neon-button"
               >
-                🎲 New Puzzle
+                🎲 NEW PUZZLE
               </button>
 
               <button
                 onClick={() => setShowLeaderboard(true)}
-                className="px-3 sm:px-4 py-2 anime-gradient-primary text-white rounded-lg anime-button font-bold transition-all transform hover:scale-105 text-sm sm:text-base shadow-lg"
+                className="pixel-button"
+                style={{ background: 'linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%)' }}
               >
-                🏆 Leaderboard
+                🏆 LEADERBOARD
               </button>
             </div>
 
-            {/* Feedback */}
+            {/* Futuristic Feedback */}
             {feedback && (
-              <div
-                className={`text-center p-4 rounded-xl font-bold text-lg anime-card shadow-2xl animate-bounce-in ${
-                  feedback.includes('🎉') || feedback.includes('💥') || feedback.includes('⚡')
-                    ? 'anime-gradient-success text-white animate-glow'
-                    : feedback.includes('❌') || feedback.includes('💀') || feedback.includes('🥲')
-                      ? 'anime-gradient-danger text-white animate-shake'
-                      : feedback.includes('💡') ||
-                          feedback.includes('💪') ||
-                          feedback.includes('🔥')
-                        ? 'anime-gradient-warning text-gray-900'
-                        : 'anime-gradient-primary text-white'
-                }`}
-              >
-                {feedback}
+              <div className="neon-card p-6 text-center relative overflow-hidden animate-bounce-in">
+                <div className="scan-lines"></div>
+                <div className="relative z-10">
+                  <div
+                    className={`font-bold text-lg anime-text-pixel ${
+                      feedback.includes('🎉') || feedback.includes('💥') || feedback.includes('⚡')
+                        ? 'text-green-400 animate-neon-glow'
+                        : feedback.includes('❌') || feedback.includes('💀') || feedback.includes('🥲')
+                          ? 'text-red-400 animate-shake'
+                          : feedback.includes('💡') ||
+                              feedback.includes('💪') ||
+                              feedback.includes('🔥')
+                            ? 'text-yellow-400'
+                            : 'text-cyan-400'
+                    }`}
+                  >
+                    {feedback}
+                  </div>
+                </div>
               </div>
             )}
 

@@ -1,25 +1,65 @@
-/* Anime-inspired CSS animations and effects */
+/* Futuristic Anime Pixel Gaming UI Theme */
 
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Press+Start+2P&family=Rajdhani:wght@300;400;500;600;700&display=swap');
 
-/* Anime-style keyframe animations */
+/* Root variables for consistent theming */
+:root {
+  --neon-cyan: #00f5ff;
+  --neon-purple: #8b5cf6;
+  --neon-pink: #ff1493;
+  --neon-yellow: #ffd700;
+  --neon-green: #00ff41;
+  --neon-orange: #ff6b35;
+  
+  --bg-primary: #0a0a0f;
+  --bg-secondary: #1a1a2e;
+  --bg-card: rgba(26, 26, 46, 0.9);
+  --bg-glass: rgba(255, 255, 255, 0.1);
+  
+  --text-primary: #ffffff;
+  --text-secondary: #b0b0b0;
+  --text-accent: #ffd700;
+  
+  --border-neon: rgba(0, 245, 255, 0.6);
+  --shadow-neon: 0 0 20px rgba(0, 245, 255, 0.5);
+}
+
+/* Futuristic Anime Keyframe Animations */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
 }
 
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 5px rgba(255, 107, 107, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.8), 0 0 30px rgba(255, 107, 107, 0.6); }
+@keyframes neonGlow {
+  0%, 100% { 
+    box-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan), 0 0 15px var(--neon-cyan);
+  }
+  50% { 
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 30px var(--neon-cyan), 0 0 40px var(--neon-cyan);
+  }
+}
+
+@keyframes purpleGlow {
+  0%, 100% { 
+    box-shadow: 0 0 5px var(--neon-purple), 0 0 10px var(--neon-purple);
+  }
+  50% { 
+    box-shadow: 0 0 15px var(--neon-purple), 0 0 25px var(--neon-purple), 0 0 35px var(--neon-purple);
+  }
 }
 
 @keyframes sparkle {
-  0%, 100% { opacity: 0; transform: scale(0); }
-  50% { opacity: 1; transform: scale(1); }
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
 }
 
 @keyframes slideInFromRight {
   0% { transform: translateX(100%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  0% { transform: translateX(-100%); opacity: 0; }
   100% { transform: translateX(0); opacity: 1; }
 }
 
@@ -36,70 +76,276 @@
   75% { transform: translateX(5px); }
 }
 
-/* Anime-style gradients */
-.anime-gradient-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+@keyframes pixelPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.05); filter: brightness(1.2); }
 }
 
-.anime-gradient-secondary {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+@keyframes neonBorder {
+  0%, 100% { border-color: var(--neon-cyan); }
+  25% { border-color: var(--neon-purple); }
+  50% { border-color: var(--neon-pink); }
+  75% { border-color: var(--neon-yellow); }
 }
 
-.anime-gradient-success {
-  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+@keyframes cityLights {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
-.anime-gradient-warning {
-  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+/* Futuristic Anime Gaming Gradients */
+.cyber-gradient-primary {
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #2d1b69 100%);
 }
 
-.anime-gradient-danger {
-  background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+.cyber-gradient-secondary {
+  background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #c084fc 100%);
 }
 
-/* Anime-style text effects */
+.cyber-gradient-success {
+  background: linear-gradient(135deg, #00ff41 0%, #00f5ff 50%, #0099cc 100%);
+}
+
+.cyber-gradient-warning {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb347 50%, #ff6b35 100%);
+}
+
+.cyber-gradient-danger {
+  background: linear-gradient(135deg, #ff1493 0%, #dc2626 50%, #b91c1c 100%);
+}
+
+.cyber-gradient-card {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(45, 27, 105, 0.9) 100%);
+  backdrop-filter: blur(20px);
+  border: 2px solid var(--border-neon);
+  box-shadow: var(--shadow-neon), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.cyber-gradient-tile {
+  background: linear-gradient(135deg, #ffd700 0%, #ffb347 50%, #ff6b35 100%);
+  border: 2px solid rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Cyberpunk cityscape background */
+.cyberpunk-bg {
+  background: 
+    linear-gradient(180deg, 
+      rgba(10, 10, 15, 0.9) 0%,
+      rgba(26, 26, 46, 0.95) 50%,
+      rgba(45, 27, 105, 0.9) 100%
+    ),
+    radial-gradient(ellipse at center, 
+      rgba(139, 92, 246, 0.1) 0%,
+      rgba(255, 20, 147, 0.05) 50%,
+      transparent 100%
+    );
+  position: relative;
+}
+
+.cyberpunk-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 98px,
+      rgba(0, 245, 255, 0.03) 100px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 98px,
+      rgba(139, 92, 246, 0.03) 100px
+    );
+  pointer-events: none;
+}
+
+/* Neon card styles */
+.neon-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(15px);
+  border: 2px solid var(--border-neon);
+  border-radius: 12px;
+  box-shadow: var(--shadow-neon), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.neon-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.1), transparent);
+  transition: left 0.6s ease;
+}
+
+.neon-card:hover::before {
+  left: 100%;
+}
+
+/* Futuristic Anime Text Effects */
 .anime-text-glow {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8),
-               0 0 20px rgba(255, 255, 255, 0.6),
-               0 0 30px rgba(255, 255, 255, 0.4);
+  color: var(--text-accent);
+  text-shadow: 
+    0 0 5px currentColor,
+    0 0 10px currentColor,
+    0 0 15px currentColor,
+    0 0 20px currentColor;
+  font-family: 'Orbitron', monospace;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.anime-text-neon {
+  color: var(--neon-cyan);
+  text-shadow: 
+    0 0 5px var(--neon-cyan),
+    0 0 10px var(--neon-cyan),
+    0 0 15px var(--neon-cyan),
+    0 0 20px var(--neon-cyan);
+  font-family: 'Orbitron', monospace;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+
+.anime-text-pixel {
+  font-family: 'Press Start 2P', monospace;
+  color: var(--text-accent);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+  letter-spacing: 1px;
 }
 
 .anime-text-outline {
-  -webkit-text-stroke: 2px #333;
-  text-shadow: 3px 3px 0 #333,
-               -1px -1px 0 #333,
-               1px -1px 0 #333,
-               -1px 1px 0 #333,
-               1px 1px 0 #333;
+  -webkit-text-stroke: 2px #000;
+  text-shadow: 
+    3px 3px 0 #000,
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+  color: var(--text-primary);
+  font-weight: 900;
 }
 
-/* Anime-style cards */
+.anime-title {
+  font-family: 'Orbitron', monospace;
+  font-weight: 900;
+  font-size: 2.5rem;
+  background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: cityLights 3s ease-in-out infinite;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+/* Futuristic Anime Cards */
 .anime-card {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
-              inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background: var(--bg-card);
+  backdrop-filter: blur(15px);
+  border: 2px solid var(--border-neon);
+  border-radius: 16px;
+  box-shadow: 
+    var(--shadow-neon),
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.anime-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, 
+    transparent 30%, 
+    rgba(0, 245, 255, 0.1) 50%, 
+    transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .anime-card-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
 }
 
 .anime-card-hover:hover {
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15),
-              inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 
+    0 0 30px var(--neon-cyan),
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: var(--neon-purple);
 }
 
-/* Anime-style buttons */
+.anime-card-hover:hover::after {
+  opacity: 1;
+}
+
+/* Anime series selection cards */
+.anime-series-card {
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(139, 92, 246, 0.2) 100%);
+  border: 2px solid transparent;
+  border-radius: 20px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s ease;
+}
+
+.anime-series-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink), var(--neon-yellow));
+  background-size: 400% 400%;
+  animation: cityLights 4s ease infinite;
+  z-index: -1;
+  margin: -2px;
+  border-radius: inherit;
+}
+
+.anime-series-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(139, 92, 246, 0.3);
+}
+
+/* Futuristic Anime Buttons */
 .anime-button {
   position: relative;
   overflow: hidden;
+  font-family: 'Orbitron', monospace;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  border: 2px solid var(--border-neon);
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  padding: 12px 24px;
   transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
 }
 
 .anime-button::before {
@@ -109,33 +355,171 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.anime-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px var(--neon-cyan), 0 5px 15px rgba(0, 0, 0, 0.3);
+  border-color: var(--neon-purple);
+  color: var(--neon-cyan);
 }
 
 .anime-button:hover::before {
   left: 100%;
 }
 
-/* Floating particles effect */
+.anime-button:active {
+  transform: translateY(0);
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+}
+
+/* Pixel-style buttons */
+.pixel-button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.8rem;
+  background: linear-gradient(135deg, var(--neon-yellow) 0%, var(--neon-orange) 100%);
+  border: 3px solid #000;
+  border-radius: 0;
+  color: #000;
+  padding: 10px 20px;
+  text-shadow: none;
+  box-shadow: 
+    3px 3px 0 #000,
+    0 0 10px rgba(255, 215, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.pixel-button:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 
+    5px 5px 0 #000,
+    0 0 20px rgba(255, 215, 0, 0.8);
+}
+
+.pixel-button:active {
+  transform: translate(1px, 1px);
+  box-shadow: 
+    2px 2px 0 #000,
+    0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* Neon outline buttons */
+.neon-button {
+  background: transparent;
+  border: 2px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  font-family: 'Orbitron', monospace;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.neon-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--neon-cyan);
+  transition: left 0.3s ease;
+  z-index: -1;
+}
+
+.neon-button:hover {
+  color: #000;
+  box-shadow: 0 0 20px var(--neon-cyan);
+  text-shadow: none;
+}
+
+.neon-button:hover::before {
+  left: 0;
+}
+
+/* Futuristic Floating Particles Effect */
 .anime-particles {
   position: absolute;
   width: 100%;
   height: 100%;
   overflow: hidden;
   pointer-events: none;
+  z-index: 1;
 }
 
 .anime-particle {
   position: absolute;
-  width: 4px;
-  height: 4px;
-  background: radial-gradient(circle, #fff 0%, transparent 70%);
+  width: 3px;
+  height: 3px;
+  background: var(--neon-cyan);
   border-radius: 50%;
-  animation: float 3s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--neon-cyan);
+  animation: float 4s ease-in-out infinite;
 }
 
-/* Anime-style borders */
+.anime-particle:nth-child(2n) {
+  background: var(--neon-purple);
+  box-shadow: 0 0 6px var(--neon-purple);
+  animation-delay: -1s;
+}
+
+.anime-particle:nth-child(3n) {
+  background: var(--neon-pink);
+  box-shadow: 0 0 6px var(--neon-pink);
+  animation-delay: -2s;
+}
+
+.anime-particle:nth-child(4n) {
+  background: var(--neon-yellow);
+  box-shadow: 0 0 6px var(--neon-yellow);
+  animation-delay: -3s;
+}
+
+/* Cyberpunk grid overlay */
+.cyber-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 245, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Neon scan lines */
+.scan-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 245, 255, 0.05) 2px,
+    rgba(0, 245, 255, 0.05) 4px
+  );
+  pointer-events: none;
+  animation: scanMove 2s linear infinite;
+}
+
+@keyframes scanMove {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Futuristic Anime Borders */
 .anime-border {
   position: relative;
 }
@@ -147,37 +531,183 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #ffeaa7, #dda0dd);
+  background: linear-gradient(45deg, 
+    var(--neon-cyan), 
+    var(--neon-purple), 
+    var(--neon-pink), 
+    var(--neon-yellow), 
+    var(--neon-green),
+    var(--neon-orange)
+  );
   background-size: 400% 400%;
   border-radius: inherit;
   z-index: -1;
-  animation: gradientShift 3s ease infinite;
+  animation: neonBorder 4s ease infinite;
 }
 
-@keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+/* Holographic border effect */
+.holo-border {
+  position: relative;
+  border: 2px solid transparent;
+  background: linear-gradient(var(--bg-card), var(--bg-card)) padding-box,
+              linear-gradient(45deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink)) border-box;
+  border-radius: 12px;
 }
 
-/* Anime-style loading */
+/* Glitch border effect */
+.glitch-border {
+  position: relative;
+  border: 2px solid var(--neon-cyan);
+  animation: glitchBorder 2s infinite;
+}
+
+@keyframes glitchBorder {
+  0%, 90%, 100% { border-color: var(--neon-cyan); }
+  5% { border-color: var(--neon-pink); }
+  10% { border-color: var(--neon-yellow); }
+  15% { border-color: var(--neon-purple); }
+}
+
+/* Futuristic Anime Loading */
 .anime-loading {
   display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 245, 255, 0.3);
   border-radius: 50%;
-  border-top-color: #fff;
+  border-top-color: var(--neon-cyan);
   animation: spin 1s ease-in-out infinite;
+  box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+}
+
+.pixel-loading {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: var(--neon-yellow);
+  animation: pixelPulse 1s ease-in-out infinite;
+  box-shadow: 0 0 8px var(--neon-yellow);
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
+/* Tile and Game Specific Styles */
+.game-tile {
+  background: linear-gradient(135deg, var(--neon-yellow) 0%, var(--neon-orange) 100%);
+  border: 2px solid rgba(255, 215, 0, 0.8);
+  border-radius: 8px;
+  color: #000;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 215, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.game-tile::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.3s ease;
+}
+
+.game-tile:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+    0 6px 12px rgba(0, 0, 0, 0.4),
+    0 0 25px rgba(255, 215, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.game-tile:hover::before {
+  left: 100%;
+}
+
+.game-tile:active {
+  transform: translateY(0) scale(1.02);
+}
+
+.game-tile.selected {
+  background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+  border-color: var(--neon-cyan);
+  color: #fff;
+  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+  animation: neonGlow 1.5s ease-in-out infinite;
+}
+
+.game-tile.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+}
+
+.game-tile.disabled:hover {
+  transform: none;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.3),
+    0 0 15px rgba(255, 215, 0, 0.4);
+}
+
+/* Drop zone styling */
+.drop-zone {
+  background: rgba(0, 245, 255, 0.1);
+  border: 2px dashed var(--neon-cyan);
+  border-radius: 8px;
+  box-shadow: inset 0 0 20px rgba(0, 245, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.drop-zone.active {
+  background: rgba(0, 245, 255, 0.2);
+  border-color: var(--neon-purple);
+  box-shadow: 
+    inset 0 0 30px rgba(0, 245, 255, 0.3),
+    0 0 20px rgba(139, 92, 246, 0.5);
+  animation: purpleGlow 1s ease-in-out infinite;
+}
+
 /* Utility classes */
 .animate-float { animation: float 3s ease-in-out infinite; }
-.animate-glow { animation: glow 2s ease-in-out infinite; }
+.animate-neon-glow { animation: neonGlow 2s ease-in-out infinite; }
+.animate-purple-glow { animation: purpleGlow 2s ease-in-out infinite; }
 .animate-sparkle { animation: sparkle 1.5s ease-in-out infinite; }
 .animate-slide-in { animation: slideInFromRight 0.5s ease-out; }
+.animate-slide-in-left { animation: slideInFromLeft 0.5s ease-out; }
 .animate-bounce-in { animation: bounceIn 0.6s ease-out; }
 .animate-shake { animation: shakeX 0.5s ease-in-out; }
+.animate-pixel-pulse { animation: pixelPulse 1s ease-in-out infinite; }
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .anime-title {
+    font-size: 1.8rem;
+    letter-spacing: 2px;
+  }
+  
+  .game-tile {
+    font-size: 0.6rem;
+  }
+  
+  .pixel-button {
+    font-size: 0.7rem;
+    padding: 8px 16px;
+  }
+  
+  .anime-button {
+    padding: 10px 20px;
+    font-size: 0.9rem;
+  }
+}
