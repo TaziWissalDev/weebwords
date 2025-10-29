@@ -1,14 +1,16 @@
-# 🎌 Anime Pixel Quest - Interactive Anime Puzzle Game
+# 🎌 Anime Line - Interactive Anime Puzzle Game
 
-**Anime Pixel Quest** is an immersive, cyberpunk-styled anime puzzle game built for Reddit using Devvit. Players complete epic anime quotes, guess legendary characters, and compete on global leaderboards while managing hearts and energy in a futuristic gaming environment with stunning visual effects and AI-powered daily challenges.
+**Anime Line** is an immersive, cyberpunk-styled anime puzzle game built for Reddit using Devvit. Players complete epic anime quotes, guess legendary characters, and compete on global leaderboards while managing hearts and energy in a futuristic gaming environment with stunning visual effects and AI-powered daily challenges.
 
-## 🎮 What is Anime Pixel Quest?
+## 🎮 What is Anime Line?
 
-Anime Pixel Quest is a comprehensive dual-mode puzzle game that combines quote completion challenges with character guessing quizzes, all wrapped in a stunning cyberpunk aesthetic. The game features a strategic resource management system where players must balance hearts and energy while progressing through increasingly difficult anime-themed puzzles.
+Anime Line is a comprehensive dual-mode puzzle game that combines quote completion challenges with character guessing quizzes, all wrapped in a stunning cyberpunk aesthetic. The game features a strategic resource management system where players must balance hearts and energy while progressing through increasingly difficult anime-themed puzzles.
+
+The game's name "Anime Line" reflects its core mechanic of completing anime quote "lines" by filling in missing words, creating a direct connection between the gameplay and the title.
 
 ### 🎯 **Core Game Experience**
 
-**Anime Pixel Quest** transforms classic anime knowledge into an engaging puzzle adventure where players:
+**Anime Line** transforms classic anime knowledge into an engaging puzzle adventure where players:
 - **Complete iconic anime quotes** by strategically placing word tiles into blank spaces
 - **Identify legendary characters** through detailed descriptions and progressive hint systems  
 - **Manage strategic resources** (hearts for health, energy for stamina) that add risk/reward depth
@@ -86,58 +88,66 @@ Anime Pixel Quest is a comprehensive dual-mode puzzle game that combines quote c
 - **Intelligent fallback system** that seamlessly switches to static content when AI is unavailable
 - **Adaptive difficulty scaling** that adjusts complexity based on current anime trends and player performance
 
-## 🌟 What Makes This Game Innovative & Unique?
+## 🌟 What Makes Anime Line Innovative & Unique?
 
-### **Immersive Cyberpunk Anime Aesthetic**
-- **Futuristic Interface**: Neon-lit UI with animated particles, scan lines, and cyber-grid overlays
-- **Anime-Themed Styling**: Pixel art typography with glowing effects and holographic card designs  
-- **Dynamic Backgrounds**: Anime-specific themes that change based on selected series
-- **Character-Specific Visuals**: Each anime has unique color schemes, particle effects, and visual motifs
-- **Responsive Animations**: Smooth transitions, hover effects, and celebration animations for high scores
+### **Revolutionary Quote Completion Mechanic**
+- **"Fill the Line" Gameplay**: Unlike traditional anime trivia games, Anime Line focuses on completing iconic anime quote "lines" by strategically placing word tiles into blank spaces
+- **Authentic Character Dialogue**: Features real quotes from legendary anime moments, not generic trivia questions
+- **Smart Distractor System**: Each puzzle includes correct answers mixed with carefully chosen distractor words that could plausibly fit, creating genuine strategic challenge
+- **Context-Aware Hints**: Three-tier hint system reveals character identity, scene context, and emoji clues without giving away the answer
 
-### **Intelligent Dual-Mode Puzzle System**
-- **Smart Content Selection**: Automatically alternates between word puzzles and character quizzes
-- **Anti-Repetition Logic**: Tracks recently used puzzles to ensure variety and prevent repetition
-- **Dynamic Difficulty Scaling**: Mixed mode randomly selects from all difficulty levels for unpredictable challenges
-- **Authentic Character Voices**: Each character provides feedback in their unique speaking style and personality
-- **Mobile-Responsive Interface**: Adaptive UI switches between drag-and-drop (desktop) and tap-to-place (mobile)
+### **Dual-Mode Intelligent Puzzle System**
+- **Seamless Mode Switching**: Game automatically alternates between word puzzle (quote completion) and character quiz (guess the character) modes for variety
+- **Anti-Repetition Technology**: Advanced PuzzleTracker service ensures players never see the same puzzle twice in a session, maintaining freshness
+- **Smart Fallback Logic**: When specific anime/difficulty combinations run out, the system intelligently falls back to broader categories rather than failing
+- **Mobile-Responsive Interface**: Automatically switches between drag-and-drop (desktop) and tap-to-place (mobile) interfaces using the specialized MobileTileInterface component
+
+### **Character-Driven Feedback System**
+- **Authentic Character Voices**: Each anime character provides feedback using their unique personality, speech patterns, and catchphrases (e.g., Naruto's "dattebayo!", Luffy's "Oi!")
+- **Personality-Based Responses**: Characters react differently to hints, wrong answers, and completions based on their canonical personalities
+- **Score-Responsive Dialogue**: Characters give different feedback based on performance - perfect scores get enthusiastic responses, while low scores trigger encouraging or teasing remarks
+- **Character-Specific Hint Reactions**: When players use hints, characters respond in-character (e.g., Rock Lee encouraging perseverance, Light Yagami being analytical)
 
 ### **Strategic Resource Management**
-- **Dual Resource System**: Hearts (health) and Energy (stamina) create strategic depth
-- **Risk vs. Reward Decisions**: Players must balance hint usage against heart conservation
-- **Time-Based Recovery**: Energy automatically regenerates every 10 minutes
-- **Progressive Difficulty**: Harder puzzles offer higher scores but greater risk of heart loss
-- **Badge-Enhanced Capacity**: Achievements unlock increased resource limits
+- **Dual Resource System**: Hearts (health/lives) and Energy (stamina/session time) create meaningful strategic decisions
+- **Mode-Specific Mechanics**: Word puzzle hints are free but character quiz hints cost hearts, adding risk/reward depth
+- **Real-Time Energy Regeneration**: Energy automatically refills every 10 minutes with live countdown display
+- **Badge-Enhanced Progression**: Achievements provide tangible gameplay benefits like increased heart capacity and faster energy regeneration
 
 ### **Advanced AI-Powered Daily Content**
-- **Daily Challenge Mode**: Fresh AI-generated puzzles with 5 unique challenge types
-- **90 Daily Puzzles**: 6 animes × 3 difficulties × 5 puzzles generated every 24 hours
-- **Intelligent Fallback**: Seamlessly switches to static content when AI is unavailable
-- **Multiple Puzzle Types**: Quote Fill, Emoji Sensei, Who Said It, Mood Match, Who Am I
-- **Adaptive Difficulty**: AI adjusts complexity based on current anime trends
+- **Daily Puzzle Generation**: When AI services are available, generates 90 fresh puzzles daily (6 animes × 3 difficulties × 5 puzzles each)
+- **Five Unique Challenge Types**: Quote Fill, Emoji Sensei, Who Said It, Mood Match, and Who Am I puzzles
+- **Intelligent Fallback System**: Seamlessly detects AI availability and switches to comprehensive static content library when needed
+- **Status Transparency**: DailyPuzzleStatus component shows generation status and allows manual refresh
+
+### **Immersive Cyberpunk Anime Aesthetic**
+- **Dynamic Anime Backgrounds**: Each anime series has its own visual theme with custom colors, particle effects, and atmospheric elements
+- **Futuristic Interface Design**: Neon-lit UI with animated scan lines, cyber-grid overlays, and holographic card designs
+- **Celebration Animations**: High-score achievements trigger special CompletionCelebration animations with character-specific effects
+- **Responsive Visual Effects**: Smooth transitions, hover effects, and anime-themed particle systems that adapt to screen size
 
 ### **Comprehensive Anime Content Library**
 - **10 Major Anime Series**: Naruto, One Piece, Attack on Titan, My Hero Academia, Death Note, Demon Slayer, Jujutsu Kaisen, Spy x Family, Bleach, Dragon Ball Z
 - **3 Difficulty Tiers**: Easy (100-150 pts), Medium (200-250 pts), Hard (300-350 pts)
 - **Mixed Mode**: Random selection across all series and difficulties for maximum variety
-- **90+ Static Puzzles**: 5+ carefully crafted puzzles per anime per difficulty level
+- **90+ Static Puzzles**: 5+ carefully crafted puzzles per anime per difficulty level stored in ALL_COMPREHENSIVE_PUZZLES_FINAL
 - **Character Quiz Integration**: 6+ character guessing challenges with progressive hint systems
-- **Authentic Content**: Real character quotes and personality-accurate descriptions
+- **Authentic Content**: Real character quotes and personality-accurate descriptions sourced from canonical anime moments
 
 ## 🎯 How to Play - Step-by-Step Instructions
 
 ### **Getting Started**
-1. **Launch the Game**: Open the Reddit post containing Anime Pixel Quest and click the "Launch App" button to enter full-screen mode
-2. **Navigate the Splash Screen**: Experience the cyberpunk-themed main menu with animated particles and neon effects
+1. **Launch the Game**: Open the Reddit post containing Anime Line and click the "Launch App" button to enter full-screen mode
+2. **Navigate the Splash Screen**: Experience the cyberpunk-themed main menu with animated particles, neon effects, and the prominent "ANIME LINE" title with floating emojis (🎌⚡🌟)
 3. **Choose Your Path**: 
    - **Regular Adventure**: Click "🔥 START ADVENTURE 🔥" for the classic puzzle experience with comprehensive content library
    - **Daily Challenge**: Click "⚡ DAILY CHALLENGE ⚡" for AI-generated fresh content with 5 unique puzzle types
-4. **Select Difficulty**: Choose from four difficulty options:
+4. **Select Difficulty**: Choose from four difficulty options using the DifficultySelector component:
    - **Easy**: Simple vocabulary, well-known characters (100-150 base points)
    - **Medium**: Moderate complexity, mix of popular and lesser-known content (200-250 base points)  
    - **Hard**: Complex vocabulary, obscure references, challenging characters (300-350 base points)
    - **Mixed**: Random selection across all difficulty levels for unpredictable variety
-5. **Pick Your Anime Universe**: Select your favorite series or choose "Mixed" for maximum content variety across all 10 supported anime
+5. **Pick Your Anime Universe**: Use the AnimeSelector component to choose your favorite series or select "Mixed" for maximum content variety across all 10 supported anime
 
 ### **Word Puzzle Mode (Quote Completion)**
 1. **Study the Quote**: A famous anime quote appears with blank spaces marked by "____" where missing words should be placed
@@ -181,12 +191,14 @@ Anime Pixel Quest is a comprehensive dual-mode puzzle game that combines quote c
 
 ### **Navigation & Game Features**
 - **🎲 NEW PUZZLE**: Manually generate a fresh challenge matching your selected anime and difficulty criteria
-- **🏆 BADGES**: Access the BadgeSystem component to view achievements, progress tracking, and unlocked rewards with gameplay benefits
+- **🏆 Badges**: Access the BadgeSystem component to view achievements, progress tracking, and unlocked rewards with gameplay benefits
 - **🏆 LEADERBOARD**: Open the LeaderboardModal to view global rankings, competitive statistics, and player badge showcases
-- **← Back**: Navigate to previous screens (returns to anime selection from gameplay, difficulty selection from anime selection, main menu from difficulty)
+- **← Back**: Navigate to previous screens with proper state management (returns to anime selection from gameplay, difficulty selection from anime selection, home from difficulty)
 - **💡 USE HINT**: Reveal helpful clues with different mechanics per mode:
-  - **Word Puzzles**: Free hints showing character identity, context, and emoji clues
-  - **Character Quizzes**: Paid hints (1 heart each) with progressive revelation and character responses
+  - **Word Puzzles**: Free hints showing character identity, context, and emoji clues (no heart cost)
+  - **Character Quizzes**: Paid hints (1 heart each) with confirmation dialog and progressive 4-level revelation system
+- **Hearts Display**: Real-time heart counter (❤️) showing current/maximum hearts with visual indicators
+- **Energy Display**: Real-time energy meter (⚡) with countdown timer showing next regeneration time
 
 ### **Scoring System & Rewards**
 - **Base Scores**:
@@ -253,7 +265,7 @@ Anime Pixel Quest is a comprehensive dual-mode puzzle game that combines quote c
 1. **Clone and install dependencies:**
    ```bash
    git clone <repo-url>
-   cd anime-pixel-quest
+   cd anime-line
    npm install
    ```
 
@@ -311,20 +323,24 @@ src/
 ```
 
 ### **Key Components**
-- **App.tsx**: Main game state management, routing, and resource tracking (hearts/energy)
-- **PuzzleGame.tsx**: Word puzzle drag-and-drop interface with mobile-responsive tile system
-- **CharacterQuiz.tsx**: Character guessing mode with progressive hint system
-- **SplashScreen.tsx**: Cyberpunk-styled main menu with animated particles and badge showcase
-- **DailyPackGame.tsx**: Special daily challenge mode with AI-generated content support
-- **LeaderboardModal.tsx**: Global leaderboard system with player rankings and badge displays
+- **App.tsx**: Main game state management with 7 distinct game states (splash, home, difficulty, animeSelection, playing, gameOver, badges, dailyPack)
+- **PuzzleGame.tsx**: Word puzzle drag-and-drop interface with mobile-responsive MobileTileInterface component
+- **CharacterQuiz.tsx**: Character guessing mode with progressive 4-level hint system and heart-cost confirmation dialogs
+- **SplashScreen.tsx**: Cyberpunk-styled main menu featuring "ANIME LINE" title with floating emojis (🎌⚡🌟) and animated particles
+- **HomePage.tsx**: Comprehensive dashboard with user profile, global leaderboards, daily challenge rankings, and community stats
+- **DailyPackGame.tsx**: Special daily challenge mode supporting 5 unique puzzle types with AI-generated content
+- **TileBoard.tsx**: Desktop drag-and-drop tile interface with cyber-grid styling and floating animations
+- **MobileTileInterface.tsx**: Touch-optimized tile placement system for mobile devices
 - **CompletionCelebration.tsx**: High-score celebration animations with character-specific effects
 
 ### **Game Services**
-- **MockDataService**: Comprehensive puzzle database, validation logic, and badge system
-- **PuzzleTracker**: Anti-repetition system that tracks recently used puzzles for variety
-- **ThemeService**: Anime-specific visual themes with dynamic backgrounds and color schemes
-- **FeedbackService**: Character-specific response system with authentic voice patterns
-- **ComprehensivePuzzles**: 90+ puzzle database with 5 puzzles per anime per difficulty level
+- **MockDataService**: Comprehensive puzzle database with validation logic, badge system, and energy management
+- **PuzzleTracker**: Anti-repetition system that tracks recently used puzzles to ensure variety across sessions
+- **ThemeService**: Anime-specific visual themes with getThemeForAnime() and getThemeClasses() functions
+- **FeedbackService**: Character-specific response system with getFeedback(), getWrongAnswerFeedback(), and getHintFeedback() methods
+- **DailyPuzzleManager**: AI-powered daily puzzle generation with intelligent fallback to static content
+- **DatabaseService**: Server-side data persistence for user profiles, scores, and leaderboards
+- **ALL_COMPREHENSIVE_PUZZLES_FINAL**: Static puzzle database containing 90+ carefully crafted anime quote puzzles
 
 ## 🎮 Game Features & Mechanics
 
@@ -436,7 +452,7 @@ Minimum Score = 10-15 points (always earn something!)
 
 ## 🎯 Game Summary
 
-**Anime Pixel Quest** combines the nostalgia of classic anime with modern puzzle mechanics in a stunning cyberpunk presentation. Players experience:
+**Anime Line** combines the nostalgia of classic anime with modern puzzle mechanics in a stunning cyberpunk presentation. Players experience:
 
 - **Dual Gameplay Modes**: Word puzzles (drag-and-drop quote completion) and character quizzes (guess-the-character with progressive hints)
 - **Strategic Resource Management**: Balance hearts and energy while deciding when to use hints
@@ -447,7 +463,7 @@ Minimum Score = 10-15 points (always earn something!)
 - **Anti-Repetition Technology**: Smart puzzle selection ensures fresh content every playthrough
 - **Cross-Platform Compatibility**: Seamless experience on desktop and mobile with adaptive interfaces
 
-Whether you're a casual anime fan or a hardcore otaku, Anime Pixel Quest offers an engaging puzzle experience that tests your anime knowledge while providing hours of entertainment in a visually stunning cyberpunk environment with competitive global leaderboards and daily fresh content.
+Whether you're a casual anime fan or a hardcore otaku, Anime Line offers an engaging puzzle experience that tests your anime knowledge while providing hours of entertainment in a visually stunning cyberpunk environment with competitive global leaderboards and daily fresh content.
 
 ## 📄 License
 

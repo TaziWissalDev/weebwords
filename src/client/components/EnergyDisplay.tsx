@@ -42,16 +42,16 @@ export const EnergyDisplay: React.FC<EnergyDisplayProps> = ({
   const energyPercentage = (safeEnergy / safeMaxEnergy) * 100;
 
   return (
-    <div className={`flex items-center space-x-3 ${className}`}>
+    <div className={`flex items-center space-x-2 sm:space-x-3 ${className}`}>
       {/* Energy Icon */}
       <div className="flex items-center space-x-1">
-        <span className="text-2xl">⚡</span>
-        <span className="text-sm font-medium text-gray-600">Energy:</span>
+        <span className="text-lg sm:text-2xl">⚡</span>
+        <span className="anime-text-pixel text-xs sm:text-sm text-white">ENERGY:</span>
       </div>
 
       {/* Energy Bar */}
-      <div className="flex-1 max-w-24">
-        <div className="w-full bg-gray-200 rounded-full h-3 relative overflow-hidden">
+      <div className="flex-1 max-w-16 sm:max-w-24">
+        <div className="w-full bg-gray-700 rounded-full h-2 sm:h-3 relative overflow-hidden">
           <div 
             className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full transition-all duration-300 relative"
             style={{ width: `${energyPercentage}%` }}
@@ -60,16 +60,16 @@ export const EnergyDisplay: React.FC<EnergyDisplayProps> = ({
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-pulse"></div>
           </div>
         </div>
-        <div className="text-xs text-gray-500 mt-1 text-center">
+        <div className="anime-text-pixel text-xs text-white mt-1 text-center">
           {safeEnergy}/{safeMaxEnergy}
         </div>
       </div>
 
       {/* Timer */}
       {safeEnergy < safeMaxEnergy && (
-        <div className="text-xs text-gray-500">
+        <div className="anime-text-pixel text-xs text-gray-400 hidden sm:block">
           <div>Refill in:</div>
-          <div className="font-mono font-bold text-orange-600">{timeUntilReset}</div>
+          <div className="font-mono font-bold text-orange-400">{timeUntilReset}</div>
         </div>
       )}
     </div>

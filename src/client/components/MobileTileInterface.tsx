@@ -52,7 +52,7 @@ export const MobileTileInterface: React.FC<MobileTileInterfaceProps> = ({
       // Add the text part
       if (part) {
         elements.push(
-          <span key={`text-${index}`} className="text-gray-800">
+          <span key={`text-${index}`} className="text-white font-bold" style={{ textShadow: '0 0 5px rgba(0,0,0,0.8)' }}>
             {part}
           </span>
         );
@@ -67,13 +67,16 @@ export const MobileTileInterface: React.FC<MobileTileInterfaceProps> = ({
         elements.push(
           <button
             key={`blank-${blankIndex}`}
-            className={`inline-block min-w-[60px] sm:min-w-[80px] h-10 sm:h-12 mx-1 px-2 sm:px-3 py-1 sm:py-2 border-2 rounded-lg text-center font-medium transition-all text-sm sm:text-base ${
+            className={`inline-block min-w-[60px] sm:min-w-[80px] h-10 sm:h-12 mx-1 px-2 sm:px-3 py-1 sm:py-2 border-2 rounded-lg text-center font-bold transition-all text-sm sm:text-base ${
               placedTile 
-                ? 'border-blue-500 bg-blue-50 text-blue-800' 
+                ? 'border-yellow-400 bg-yellow-400 text-black shadow-lg' 
                 : isSelected
-                ? 'border-green-500 bg-green-50 text-green-800 animate-pulse'
-                : 'border-gray-300 bg-gray-50 hover:border-gray-400'
+                ? 'border-cyan-400 bg-cyan-400/20 text-cyan-300 animate-pulse'
+                : 'border-cyan-400/50 bg-gray-800/50 text-white hover:bg-gray-700/50'
             }`}
+            style={{ 
+              textShadow: placedTile ? '0 0 3px rgba(0,0,0,0.5)' : '0 0 5px rgba(255,255,255,0.5)'
+            }}
             onClick={() => handleBlankSelect(blankIndex)}
           >
             {placedTile || (isSelected ? 'TAP TILE' : '____')}

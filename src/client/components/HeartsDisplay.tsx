@@ -17,20 +17,22 @@ export const HeartsDisplay: React.FC<HeartsDisplayProps> = ({
   
   return (
     <div className={`flex items-center space-x-1 ${className}`}>
-      <span className="text-sm font-medium text-gray-600 mr-2">Lives:</span>
-      {Array.from({ length: safeMaxHearts }, (_, index) => (
-        <span
-          key={index}
-          className={`text-2xl ${
-            index < safeHearts 
-              ? 'text-red-500' 
-              : 'text-gray-300'
-          } transition-colors duration-300`}
-        >
-          {index < safeHearts ? '❤️' : '🤍'}
-        </span>
-      ))}
-      <span className="text-sm text-gray-500 ml-2">
+      <span className="anime-text-pixel text-xs sm:text-sm text-white mr-1 sm:mr-2">LIVES:</span>
+      <div className="flex space-x-1">
+        {Array.from({ length: safeMaxHearts }, (_, index) => (
+          <span
+            key={index}
+            className={`text-lg sm:text-2xl ${
+              index < safeHearts 
+                ? 'text-red-500' 
+                : 'text-gray-600'
+            } transition-colors duration-300`}
+          >
+            {index < safeHearts ? '❤️' : '🤍'}
+          </span>
+        ))}
+      </div>
+      <span className="anime-text-pixel text-xs sm:text-sm text-white ml-1 sm:ml-2">
         {safeHearts}/{safeMaxHearts}
       </span>
     </div>

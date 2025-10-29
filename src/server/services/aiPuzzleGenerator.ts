@@ -24,11 +24,11 @@ export class OpenAIProvider implements AIProvider {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-mini',
         messages: [
           {
             role: 'system',
-            content: 'You are an anime expert who creates engaging word puzzles and character quizzes. Always respond with valid JSON only.'
+            content: 'You are an anime expert who creates engaging word puzzles and character quizzes. Always respond with valid JSON only. Make puzzles challenging but fair, with authentic character voices and memorable quotes.'
           },
           {
             role: 'user',
@@ -36,7 +36,7 @@ export class OpenAIProvider implements AIProvider {
           }
         ],
         temperature: 0.8,
-        max_tokens: 2000
+        max_tokens: 3000
       })
     });
 

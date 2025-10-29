@@ -343,6 +343,25 @@ export class DatabaseService {
     return data.slice(0, limit);
   }
 
+  // Enhanced global leaderboard with user position
+  static async getGlobalLeaderboardWithUser(username: string, limit: number = 20) {
+    const globalLeaderboardKey = 'global_leaderboard';
+    const leaderboard = await redis.get(globalLeaderboardKey);
+    const allData = leaderboard ? JSON.parse(leaderboard) : [];
+    
+    // Find user's position in the full leaderboard
+    const userIndex = allData.findIndex((entry: any) => entry.username === username);
+    const userRank = userIndex !== -1 ? userIndex + 1 : null;
+    const userEntry = userIndex !== -1 ? allData[userIndex] : null;
+    
+    return {
+      topUsers: allData.slice(0, limit),
+      userRank,
+      userEntry,
+      totalPlayers: allData.length
+    };
+  }
+
   // Home page statistics
   static async getHomePageStats() {
     const today = new Date().toISOString().split('T')[0];
@@ -351,12 +370,14 @@ export class DatabaseService {
       dailyTopScorer,
       globalLeaderboard,
       totalUsers,
-      todaysPuzzlesSolved
+      todaysPuzzlesSolved,
+      concurrentStats
     ] = await Promise.all([
       redis.get('home_stats:daily_top_scorer'),
       this.getGlobalLeaderboard(5),
       redis.scard('all_users'),
-      redis.get(`daily_stats:${today}:puzzles_solved`)
+      redis.get(`daily_stats:${today}:puzzles_solved`),
+      this.getMaxConcurrentPlayers()
     ]);
 
     return {
@@ -364,6 +385,7 @@ export class DatabaseService {
       globalTop5: globalLeaderboard,
       totalUsers: totalUsers || 0,
       todaysPuzzlesSolved: todaysPuzzlesSolved ? parseInt(todaysPuzzlesSolved) : 0,
+      concurrentPlayers: concurrentStats,
       lastUpdated: new Date().toISOString()
     };
   }
@@ -389,5 +411,229 @@ export class DatabaseService {
   static async registerUser(username: string) {
     await redis.sadd('all_users', username);
     await this.incrementDailyStats('new_users');
+  }
+
+  // Active player tracking for concurrent users
+  static async trackActivePlayer(username: string) {
+    const activePlayersKey = 'active_players';
+    const userActivityKey = `user_activity:${username}`;
+    
+    // Add user to active players set
+    await redis.sadd(activePlayersKey, username);
+    
+    // Set user activity timestamp with 5-minute expiration
+    await redis.setex(userActivityKey, 300, Date.now().toString());
+    
+    // Clean up inactive players (older than 5 minutes)
+    await this.cleanupInactivePlayers();
+  }
+
+  static async cleanupInactivePlayers() {
+    const activePlayersKey = 'active_players';
+    const activeUsers = await redis.smembers(activePlayersKey);
+    const now = Date.now();
+    const fiveMinutesAgo = now - (5 * 60 * 1000);
+
+    for (const username of activeUsers) {
+      const userActivityKey = `user_activity:${username}`;
+      const lastActivity = await redis.get(userActivityKey);
+      
+      if (!lastActivity || parseInt(lastActivity) < fiveMinutesAgo) {
+        await redis.srem(activePlayersKey, username);
+      }
+    }
+  }
+
+  static async getActivePlayersCount(): Promise<number> {
+    await this.cleanupInactivePlayers();
+    return await redis.scard('active_players');
+  }
+
+  static async getMaxConcurrentPlayers(): Promise<{
+    current: number;
+    todayMax: number;
+    allTimeMax: number;
+  }> {
+    const current = await this.getActivePlayersCount();
+    const today = new Date().toISOString().split('T')[0];
+    
+    const todayMaxKey = `max_concurrent:${today}`;
+    const allTimeMaxKey = 'max_concurrent:all_time';
+    
+    const todayMax = await redis.get(todayMaxKey);
+    const allTimeMax = await redis.get(allTimeMaxKey);
+    
+    const todayMaxNum = todayMax ? parseInt(todayMax) : 0;
+    const allTimeMaxNum = allTimeMax ? parseInt(allTimeMax) : 0;
+    
+    // Update maximums if current is higher
+    if (current > todayMaxNum) {
+      await redis.setex(todayMaxKey, 86400, current.toString()); // 24 hour expiration
+    }
+    
+    if (current > allTimeMaxNum) {
+      await redis.set(allTimeMaxKey, current.toString());
+    }
+    
+    return {
+      current,
+      todayMax: Math.max(current, todayMaxNum),
+      allTimeMax: Math.max(current, allTimeMaxNum)
+    };
+  }
+
+  // Puzzle uniqueness tracking
+  static async markPuzzleAsUsed(username: string, puzzleId: string) {
+    const userPuzzlesKey = `user_puzzles:${username}`;
+    await redis.sadd(userPuzzlesKey, puzzleId);
+    // Set expiration to 7 days to allow puzzle reuse after a week
+    await redis.expire(userPuzzlesKey, 86400 * 7);
+  }
+
+  static async hasPuzzleBeenUsed(username: string, puzzleId: string): Promise<boolean> {
+    const userPuzzlesKey = `user_puzzles:${username}`;
+    const result = await redis.sismember(userPuzzlesKey, puzzleId);
+    return result === 1;
+  }
+
+  static async getUsedPuzzles(username: string): Promise<string[]> {
+    const userPuzzlesKey = `user_puzzles:${username}`;
+    return await redis.smembers(userPuzzlesKey);
+  }
+
+  static async clearUsedPuzzles(username: string) {
+    const userPuzzlesKey = `user_puzzles:${username}`;
+    await redis.del(userPuzzlesKey);
+  }
+
+  // General score system - track maximum score achieved
+  static async updateMaxScore(username: string, score: number, puzzleType: string, anime: string, difficulty: string) {
+    const maxScoreKey = `max_score:${username}`;
+    const currentMaxScore = await redis.get(maxScoreKey);
+    const maxScore = currentMaxScore ? parseInt(currentMaxScore) : 0;
+
+    if (score > maxScore) {
+      await redis.set(maxScoreKey, score.toString());
+      
+      // Store details of the max score achievement
+      const maxScoreDetailsKey = `max_score_details:${username}`;
+      const maxScoreDetails = {
+        score,
+        puzzleType,
+        anime,
+        difficulty,
+        achieved_at: new Date().toISOString()
+      };
+      await redis.set(maxScoreDetailsKey, JSON.stringify(maxScoreDetails));
+
+      // Update global max score leaderboard
+      await this.updateGlobalMaxScoreLeaderboard(username, score, maxScoreDetails);
+      
+      return { isNewRecord: true, previousMax: maxScore, newMax: score };
+    }
+
+    return { isNewRecord: false, currentMax: maxScore };
+  }
+
+  static async getMaxScore(username: string) {
+    const maxScoreKey = `max_score:${username}`;
+    const maxScoreDetailsKey = `max_score_details:${username}`;
+    
+    const [maxScore, details] = await Promise.all([
+      redis.get(maxScoreKey),
+      redis.get(maxScoreDetailsKey)
+    ]);
+
+    return {
+      maxScore: maxScore ? parseInt(maxScore) : 0,
+      details: details ? JSON.parse(details) : null
+    };
+  }
+
+  // Global max score leaderboard
+  static async updateGlobalMaxScoreLeaderboard(username: string, score: number, details: any) {
+    const globalMaxScoreKey = 'global_max_score_leaderboard';
+    const leaderboard = await redis.get(globalMaxScoreKey);
+    const leaderboardData = leaderboard ? JSON.parse(leaderboard) : [];
+
+    // Remove existing entry
+    const filteredLeaderboard = leaderboardData.filter((entry: any) => entry.username !== username);
+    
+    // Add updated entry
+    filteredLeaderboard.push({
+      username,
+      max_score: score,
+      puzzle_type: details.puzzleType,
+      anime: details.anime,
+      difficulty: details.difficulty,
+      achieved_at: details.achieved_at
+    });
+
+    // Sort by max score descending
+    filteredLeaderboard.sort((a: any, b: any) => b.max_score - a.max_score);
+
+    // Keep top 50
+    const topLeaderboard = filteredLeaderboard.slice(0, 50);
+    
+    // Update rank positions
+    topLeaderboard.forEach((entry: any, index: number) => {
+      entry.rank_position = index + 1;
+    });
+
+    await redis.set(globalMaxScoreKey, JSON.stringify(topLeaderboard));
+
+    return topLeaderboard;
+  }
+
+  static async getGlobalMaxScoreLeaderboard(limit: number = 10) {
+    const globalMaxScoreKey = 'global_max_score_leaderboard';
+    const leaderboard = await redis.get(globalMaxScoreKey);
+    const data = leaderboard ? JSON.parse(leaderboard) : [];
+    return data.slice(0, limit);
+  }
+
+  // Enhanced user profile with max score
+  static async getUserProfile(username: string) {
+    const [user, badges, maxScoreData] = await Promise.all([
+      this.getUser(username),
+      this.getUserBadges(username),
+      this.getMaxScore(username)
+    ]);
+
+    if (!user) return null;
+
+    return {
+      ...user,
+      badges,
+      maxScore: maxScoreData.maxScore,
+      maxScoreDetails: maxScoreData.details
+    };
+  }
+
+  // User statistics increment
+  static async incrementUserStat(username: string, statName: string, value: number = 1) {
+    const user = await this.getUser(username);
+    if (!user) return null;
+
+    // Map stat names to user properties
+    const statMapping: { [key: string]: string } = {
+      'challenges_created': 'challengesCreated',
+      'challenges_completed': 'challengesCompleted',
+      'challenges_won': 'challengesWon',
+      'challenges_lost': 'challengesLost'
+    };
+
+    const userProperty = statMapping[statName] || statName;
+    
+    if (user[userProperty] !== undefined) {
+      user[userProperty] = (user[userProperty] || 0) + value;
+    } else {
+      user[userProperty] = value;
+    }
+
+    user.updated_at = new Date().toISOString();
+    await redis.set(`user:${username}`, JSON.stringify(user));
+    
+    return user;
   }
 }

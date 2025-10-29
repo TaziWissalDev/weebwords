@@ -17,6 +17,7 @@ import { useIsMobile } from '../hooks/useIsMobile';
 import { AnimeBackground } from './AnimeBackground';
 import { FeedbackService } from '../services/feedbackService';
 import { CompletionCelebration } from './CompletionCelebration';
+import { Timer } from './Timer';
 
 interface PuzzleGameProps {
   initialPuzzle: GamePuzzle | null;
@@ -24,7 +25,7 @@ interface PuzzleGameProps {
   gameStats: GameStats;
   selectedDifficulty: 'easy' | 'medium' | 'hard' | 'mixed';
   selectedAnime: string;
-  onPuzzleComplete: (score: number) => void;
+  onPuzzleComplete: (score: number, hintsUsed: number) => void;
   onWrongAnswer: () => void;
   onBackToDifficulty: () => void;
   onShowBadges: () => void;
@@ -62,6 +63,8 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
     character: string;
     score: number;
   } | null>(null);
+  const [timeLimit, setTimeLimit] = useState(300); // 5 minutes default
+  const [isTimerActive, setIsTimerActive] = useState(true);
 
   // Get theme classes for the selected anime
   const themeClasses = getThemeClasses(selectedAnime);
@@ -71,6 +74,11 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
     if (initialPuzzle) {
       setCurrentGamePuzzle(initialPuzzle);
       if (initialPuzzle.type === 'word-puzzle' && initialPuzzle.wordPuzzle) {
+        const difficulty = initialPuzzle.wordPuzzle.difficulty;
+        const puzzleTimeLimit = difficulty === 'easy' ? 180 : difficulty === 'medium' ? 240 : 300; // 3, 4, 5 minutes
+        setTimeLimit(puzzleTimeLimit);
+        setIsTimerActive(true);
+        
         setPuzzleState({
           currentPuzzle: initialPuzzle.wordPuzzle,
           placedTiles: {},
@@ -78,6 +86,9 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
           isCompleted: false,
           score: 0,
           hintsUsed: 0,
+          timeLimit: puzzleTimeLimit,
+          timeRemaining: puzzleTimeLimit,
+          startTime: Date.now(),
         });
       }
     }
@@ -202,7 +213,7 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
           setShowCelebration(true);
         }
 
-        onPuzzleComplete(score);
+        onPuzzleComplete(score, puzzleState.hintsUsed);
 
         // Load next puzzle after a delay
         setTimeout(() => {
@@ -312,7 +323,7 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
           setShowCelebration(true);
         }
 
-        onPuzzleComplete(score);
+        onPuzzleComplete(score, hintsUsed);
 
         // Load next puzzle after a delay
         setTimeout(() => {
@@ -351,12 +362,31 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
     }
   };
 
+  const handleTimeUp = () => {
+    setIsTimerActive(false);
+    setFeedback('⏰ Time\'s up! Moving to next puzzle...');
+    onWrongAnswer(); // Lose a heart for running out of time
+    
+    setTimeout(() => {
+      handleNewPuzzle();
+    }, 2000);
+  };
+
+  const handleTimeUpdate = (timeRemaining: number) => {
+    setPuzzleState(prev => ({ ...prev, timeRemaining }));
+  };
+
   const handleNewPuzzle = () => {
     const difficultyForPuzzle = selectedDifficulty === 'mixed' ? undefined : selectedDifficulty;
     const puzzle = MockDataService.getRandomPuzzle(difficultyForPuzzle, selectedAnime);
     setCurrentGamePuzzle(puzzle);
 
     if (puzzle.type === 'word-puzzle' && puzzle.wordPuzzle) {
+      const difficulty = puzzle.wordPuzzle.difficulty;
+      const puzzleTimeLimit = difficulty === 'easy' ? 180 : difficulty === 'medium' ? 240 : 300;
+      setTimeLimit(puzzleTimeLimit);
+      setIsTimerActive(true);
+      
       setPuzzleState({
         currentPuzzle: puzzle.wordPuzzle,
         placedTiles: {},
@@ -364,6 +394,9 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
         isCompleted: false,
         score: 0,
         hintsUsed: 0,
+        timeLimit: puzzleTimeLimit,
+        timeRemaining: puzzleTimeLimit,
+        startTime: Date.now(),
       });
     }
     setFeedback('');
@@ -455,14 +488,22 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
               </div>
             </div>
 
-            {/* Score and Info */}
-            <ScoreDisplay
-              score={puzzleState.score}
-              hintsUsed={puzzleState.hintsUsed}
-              difficulty={puzzleState.currentPuzzle.difficulty}
-              anime={puzzleState.currentPuzzle.anime}
-              character={puzzleState.currentPuzzle.character}
-            />
+            {/* Timer and Score */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Timer
+                timeLimit={timeLimit}
+                onTimeUp={handleTimeUp}
+                isActive={isTimerActive && !puzzleState.isCompleted}
+                onTimeUpdate={handleTimeUpdate}
+              />
+              <ScoreDisplay
+                score={puzzleState.score}
+                hintsUsed={puzzleState.hintsUsed}
+                difficulty={puzzleState.currentPuzzle.difficulty}
+                anime={puzzleState.currentPuzzle.anime}
+                character={puzzleState.currentPuzzle.character}
+              />
+            </div>
 
             {/* Quote Display and Tile Board - Mobile vs Desktop */}
             {isMobile ? (

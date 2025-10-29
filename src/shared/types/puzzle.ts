@@ -53,6 +53,9 @@ export interface PuzzleState {
   isCompleted: boolean;
   score: number;
   hintsUsed: number;
+  timeRemaining?: number;
+  timeLimit?: number;
+  startTime?: number;
 }
 
 export interface Badge {
@@ -84,6 +87,9 @@ export interface GameStats {
   unlockedBadges: string[];
   level: number;
   experience: number;
+  challengesCreated?: number;
+  challengesWon?: number;
+  challengesLost?: number;
 }
 
 export interface AnimeTheme {
@@ -102,4 +108,47 @@ export interface AnimeTheme {
     particles?: boolean;
     animations?: string[];
   };
+}
+
+export interface PuzzleChallenge {
+  id: string;
+  createdBy: string;
+  createdAt: string;
+  title: string;
+  description: string;
+  puzzles: GamePuzzle[];
+  timeLimit: number; // in seconds
+  difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
+  anime: string;
+  isPublic: boolean;
+  shareCode: string;
+  completions: ChallengeCompletion[];
+  maxAttempts?: number;
+}
+
+export interface ChallengeCompletion {
+  username: string;
+  completedAt: string;
+  totalScore: number;
+  timeUsed: number;
+  hintsUsed: number;
+  puzzleResults: PuzzleResult[];
+}
+
+export interface PuzzleResult {
+  puzzleId: string;
+  isCorrect: boolean;
+  score: number;
+  timeUsed: number;
+  hintsUsed: number;
+}
+
+export interface DashboardStats {
+  totalChallengesCreated: number;
+  totalChallengesCompleted: number;
+  challengesByAnime: { [anime: string]: { created: number; won: number; lost: number } };
+  averageScore: number;
+  bestTime: number;
+  favoriteAnime: string;
+  winRate: number;
 }

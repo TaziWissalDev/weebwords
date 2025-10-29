@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SplashScreen } from './components/SplashScreen';
+import { PixelSplashScreen } from './components/PixelSplashScreen';
 import { HomePage } from './components/HomePage';
 import { PuzzleGame } from './components/PuzzleGame';
 import { DifficultySelector } from './components/DifficultySelector';
@@ -9,6 +10,7 @@ import { BadgeSystem } from './components/BadgeSystem';
 import { DailyPackGame } from './components/DailyPackGame';
 import { GamePuzzle, GameStats } from '../shared/types/puzzle';
 import { MockDataService } from './services/mockData';
+import { LeaderboardModal } from './components/LeaderboardModal';
 
 type GameState = 'splash' | 'home' | 'difficulty' | 'animeSelection' | 'playing' | 'gameOver' | 'badges' | 'dailyPack';
 
@@ -20,6 +22,7 @@ export const App = () => {
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('mixed');
   const [selectedAnime, setSelectedAnime] = useState<string>('Mixed');
   const [gameStats, setGameStats] = useState<GameStats>(MockDataService.getInitialGameStats());
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   useEffect(() => {
     initializeGame();
@@ -66,7 +69,40 @@ export const App = () => {
     setGameState('playing');
   };
 
-  const handlePuzzleComplete = (score: number) => {
+  const handlePuzzleComplete = async (score: number, hintsUsed: number = 0) => {
+    // Submit score to server
+    try {
+      if (currentPuzzle) {
+        const puzzleType = currentPuzzle.type === 'word-puzzle' ? 'word-puzzle' : 'character-guess';
+        const puzzleData = currentPuzzle.type === 'word-puzzle' ? currentPuzzle.wordPuzzle : currentPuzzle.characterQuiz;
+        
+        if (puzzleData) {
+          const response = await fetch('/api/puzzle/submit-score', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              puzzle_id: puzzleData.id,
+              puzzle_type: puzzleType,
+              anime: puzzleData.anime,
+              character: puzzleData.character,
+              difficulty: puzzleData.difficulty,
+              score,
+              hints_used: hintsUsed,
+            }),
+          });
+          
+          if (response.ok) {
+            const result = await response.json();
+            console.log('✅ Score submitted successfully:', result);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to submit score:', error);
+    }
+
     setGameStats(prev => {
       let updatedStats = {
         ...prev,
@@ -135,6 +171,14 @@ export const App = () => {
     setGameState('playing');
   };
 
+  const handleShowLeaderboard = () => {
+    setShowLeaderboard(true);
+  };
+
+  const handleCloseLeaderboard = () => {
+    setShowLeaderboard(false);
+  };
+
   if (loading) {
     return (
       <div className="cyberpunk-bg min-h-screen flex items-center justify-center relative overflow-hidden">
@@ -155,7 +199,20 @@ export const App = () => {
 
   switch (gameState) {
     case 'splash':
-      return <SplashScreen onPlay={handleGoToHome} onDailyPack={handleDailyPack} username={username} />;
+      return (
+        <>
+          <PixelSplashScreen 
+            onPlay={handleGoToHome} 
+            onDailyPack={handleDailyPack} 
+            onShowLeaderboard={handleShowLeaderboard}
+            username={username} 
+          />
+          <LeaderboardModal 
+            isOpen={showLeaderboard} 
+            onClose={handleCloseLeaderboard} 
+          />
+        </>
+      );
     
     case 'home':
       return <HomePage username={username} onStartGame={handleStartGame} onDailyChallenge={handleDailyPack} />;
