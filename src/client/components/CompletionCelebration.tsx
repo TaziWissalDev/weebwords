@@ -35,15 +35,15 @@ export const CompletionCelebration: React.FC<CompletionCelebrationProps> = ({
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="text-center text-white max-w-md mx-auto p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="text-center max-w-sm sm:max-w-md mx-auto">
         {/* Fireworks Effect */}
         {showFireworks && (
           <div className="absolute inset-0 pointer-events-none">
-            {[...Array(12)].map((_, i) => (
+            {[...Array(8)].map((_, i) => (
               <div
                 key={i}
-                className="absolute text-4xl animate-sparkle"
+                className="absolute text-2xl sm:text-4xl animate-sparkle"
                 style={{
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
@@ -57,25 +57,29 @@ export const CompletionCelebration: React.FC<CompletionCelebrationProps> = ({
           </div>
         )}
 
-        {/* Main Celebration */}
-        <div className="anime-card rounded-2xl p-8 animate-bounce-in">
-          <div className="text-6xl mb-4 animate-glow">🏆</div>
-          
-          <h2 className="text-3xl font-black mb-4 anime-text-glow anime-text-outline">
-            PUZZLE COMPLETE!
-          </h2>
-          
-          <div className="text-5xl font-bold mb-4 anime-gradient-warning bg-clip-text text-transparent">
-            {score} POINTS
-          </div>
-          
-          <div className="text-lg font-semibold mb-6 anime-text-glow">
-            {celebrationMessage}
-          </div>
+        {/* Main Celebration - Responsive Design */}
+        <div className="neon-card p-6 sm:p-8 animate-bounce-in relative overflow-hidden">
+          <div className="cyber-grid opacity-30"></div>
+          <div className="scan-lines"></div>
+          <div className="relative z-10">
+            <div className="text-4xl sm:text-6xl mb-4 animate-neon-glow">🏆</div>
+            
+            <h2 className="anime-text-neon text-xl sm:text-3xl mb-4">
+              PUZZLE COMPLETE!
+            </h2>
+            
+            <div className="text-3xl sm:text-5xl font-bold mb-4 text-cyan-400 animate-pulse">
+              {score} POINTS
+            </div>
+            
+            <div className="anime-text-pixel text-sm sm:text-base mb-6 text-yellow-400">
+              Legendary performance! ⚡
+            </div>
 
-          {/* Character-specific celebration emoji */}
-          <div className="text-4xl animate-float">
-            {getCharacterEmoji(character)}
+            {/* Character-specific celebration emoji */}
+            <div className="text-3xl sm:text-4xl animate-float">
+              {getCharacterEmoji(character)}
+            </div>
           </div>
         </div>
       </div>

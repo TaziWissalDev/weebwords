@@ -34,33 +34,26 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-3 sm:p-4 border border-gray-200">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-        {/* Top/Left side - Anime info */}
-        <div className="flex items-center space-x-3 sm:space-x-4">
+    <div className="bg-white rounded-lg shadow-md p-3 sm:p-4 mx-2 sm:mx-0">
+      <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-3 xs:gap-4">
+        {/* Score and Anime Info */}
+        <div className="flex items-center justify-between xs:justify-start xs:space-x-4">
           <div className="text-center">
-            <div className="text-xl sm:text-2xl font-bold text-blue-600">{score}</div>
+            <div className="text-xl sm:text-2xl font-bold text-gray-800">{score}</div>
             <div className="text-xs text-gray-500">Score</div>
           </div>
           
-          <div className="h-8 w-px bg-gray-300"></div>
-          
-          <div>
+          <div className="text-center xs:text-left">
             <div className="font-semibold text-gray-800 text-sm sm:text-base">{anime}</div>
             <div className="text-xs sm:text-sm text-gray-600">{character}</div>
           </div>
-        </div>
-        
-        {/* Bottom/Right side - Stats */}
-        <div className="flex items-center justify-between sm:justify-end space-x-3 sm:space-x-4">
+          
           <div className="text-center">
-            <div className="text-base sm:text-lg font-semibold text-gray-700">{hintsUsed}</div>
+            <div className="text-lg sm:text-xl font-bold text-gray-800">{hintsUsed}</div>
             <div className="text-xs text-gray-500">Hints</div>
           </div>
           
-          <div className="h-8 w-px bg-gray-300"></div>
-          
-          <div className={`px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium ${getDifficultyColor(difficulty)}`}>
+          <div className={`px-2 py-1 rounded-full text-xs font-bold ${getDifficultyColor(difficulty)}`}>
             {getDifficultyEmoji(difficulty)} {difficulty.toUpperCase()}
           </div>
         </div>

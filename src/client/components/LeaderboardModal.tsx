@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AnimeLeaderboard, BadgeLevel, BadgeInfo } from '../../shared/types/leaderboard';
+import { AnimeLeaderboard, BadgeLevel, BadgeInfo, GlobalLeaderboard } from '../../shared/types/leaderboard';
 import { getBadgeInfo } from '../utils/badgeUtils';
 
 interface LeaderboardModalProps {
@@ -8,246 +8,212 @@ interface LeaderboardModalProps {
 }
 
 export const LeaderboardModal: React.FC<LeaderboardModalProps> = ({ isOpen, onClose }) => {
-  const [leaderboards, setLeaderboards] = useState<AnimeLeaderboard[]>([]);
+  const [globalLeaderboard, setGlobalLeaderboard] = useState<GlobalLeaderboard | null>(null);
   const [userBadges, setUserBadges] = useState<{ [anime: string]: BadgeLevel }>({});
-  const [selectedAnime, setSelectedAnime] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      fetchLeaderboards();
+      fetchGlobalLeaderboard();
     }
   }, [isOpen]);
 
-  const fetchLeaderboards = async () => {
+  const fetchGlobalLeaderboard = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/leaderboard');
+      const response = await fetch('/api/leaderboard/global');
       const data = await response.json();
       
-      if (data.type === 'leaderboard') {
-        setLeaderboards(data.leaderboards);
-        setUserBadges(data.userBadges);
-        
-        // Set first anime as selected by default
-        if (data.leaderboards.length > 0) {
-          setSelectedAnime(data.leaderboards[0].anime);
-        }
+      if (data.type === 'global-leaderboard') {
+        setGlobalLeaderboard({
+          topUsers: data.topUsers,
+          userEntries: data.userEntries,
+          userRank: data.userRank,
+          totalPlayers: data.totalPlayers
+        });
+      }
+
+      // Also fetch user badges
+      const badgesResponse = await fetch('/api/leaderboard');
+      const badgesData = await badgesResponse.json();
+      if (badgesData.type === 'leaderboard') {
+        setUserBadges(badgesData.userBadges);
       }
     } catch (error) {
-      console.error('Error fetching leaderboards:', error);
+      console.error('Error fetching global leaderboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const selectedLeaderboard = leaderboards.find(lb => lb.anime === selectedAnime);
-
   if (!isOpen) return null;
 
+  // Anime series configuration matching the image
+  const animeSeriesConfig = [
+    { name: 'Naruto', color: 'from-orange-400 to-red-500', mode: 'NARTO MODE', emoji: '🍃' },
+    { name: 'One Piece', color: 'from-cyan-400 to-blue-500', mode: 'NARTO THOME', emoji: '🏴‍☠️' },
+    { name: 'Attack on Titan', color: 'from-red-600 to-gray-700', mode: 'MEDIUM MODE', emoji: '⚔️' },
+    { name: 'Death Note', color: 'from-gray-600 to-black', mode: 'WAIVE MODE', emoji: '📓' },
+    { name: 'My Hero Academia', color: 'from-green-400 to-blue-500', mode: 'MEDIUM MODE', emoji: '💪' },
+    { name: 'Demon Slayer', color: 'from-pink-500 to-purple-600', mode: 'MEDUE MODE', emoji: '🗡️' }
+  ];
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-2 sm:p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-3 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg sm:text-2xl font-bold">🏆 Anime Leaderboards</h2>
-              <p className="text-blue-100 mt-1 text-sm sm:text-base">See who's mastered each anime series!</p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-white hover:text-gray-200 text-xl sm:text-2xl font-bold"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row h-[500px] sm:h-[600px]">
-          {/* Anime Selection Sidebar */}
-          <div className="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 overflow-y-auto max-h-[200px] md:max-h-none">
-            <div className="p-2 sm:p-4">
-              <h3 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base">Select Anime</h3>
-              <div className="space-y-2">
-                {leaderboards.map((leaderboard) => {
-                  const badge = userBadges[leaderboard.anime];
-                  const badgeInfo = badge ? getBadgeInfo(badge) : null;
-                  
-                  return (
-                    <button
-                      key={leaderboard.anime}
-                      onClick={() => setSelectedAnime(leaderboard.anime)}
-                      className={`w-full text-left p-2 sm:p-3 rounded-lg transition-colors ${
-                        selectedAnime === leaderboard.anime
-                          ? 'bg-blue-100 border-2 border-blue-300'
-                          : 'bg-white border border-gray-200 hover:bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium text-gray-800 text-sm sm:text-base">{leaderboard.anime}</div>
-                          <div className="text-xs sm:text-sm text-gray-500">
-                            {leaderboard.totalPuzzles} puzzles
-                          </div>
-                        </div>
-                        {badgeInfo && (
-                          <div className="flex items-center space-x-1">
-                            <span className="text-sm sm:text-lg">{badgeInfo.emoji}</span>
-                            <span className={`text-xs font-medium ${badgeInfo.color} hidden sm:inline`}>
-                              {badgeInfo.name}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+    <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center p-4 z-50">
+      <div className="cyberpunk-bg w-full max-w-6xl h-[90vh] rounded-lg relative overflow-hidden">
+        <div className="cyber-grid"></div>
+        <div className="scan-lines"></div>
+        
+        {/* Header matching the image design */}
+        <div className="relative z-10 p-6">
+          <div className="text-center mb-6">
+            <h1 className="anime-title text-4xl mb-2">GLOBAL LEADERBOARDS</h1>
+            <p className="anime-text-neon">Ranked by Anime Universe</p>
           </div>
 
-          {/* Leaderboard Content */}
-          <div className="flex-1 overflow-y-auto">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-              </div>
-            ) : selectedLeaderboard ? (
-              <div className="p-6">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold text-gray-800 mb-2">
-                    {selectedLeaderboard.anime} Leaderboard
-                  </h3>
-                  <p className="text-gray-600">
-                    Top players who've mastered {selectedLeaderboard.anime} puzzles
-                  </p>
-                </div>
-
-                {/* User's Rank (if applicable) */}
-                {selectedLeaderboard.userStats && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-blue-800">Your Rank</div>
-                        <div className="text-sm text-blue-600">
-                          #{selectedLeaderboard.userRank} • {selectedLeaderboard.userStats.puzzlesSolved} puzzles solved
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-blue-800">
-                          {selectedLeaderboard.userStats.averageScore} avg
-                        </div>
-                        {userBadges[selectedLeaderboard.anime] && (
-                          <div className="flex items-center justify-end space-x-1 mt-1">
-                            <span className="text-sm">
-                              {getBadgeInfo(userBadges[selectedLeaderboard.anime]).emoji}
-                            </span>
-                            <span className={`text-xs font-medium ${getBadgeInfo(userBadges[selectedLeaderboard.anime]).color}`}>
-                              {getBadgeInfo(userBadges[selectedLeaderboard.anime]).name}
-                            </span>
-                          </div>
-                        )}
-                      </div>
+          {/* Anime Series Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            {animeSeriesConfig.map((anime, index) => {
+              const userBadge = userBadges[anime.name];
+              const badgeInfo = userBadge ? getBadgeInfo(userBadge) : null;
+              
+              return (
+                <div key={anime.name} className="anime-series-card p-4 text-center">
+                  <div className="text-3xl mb-2">{anime.emoji}</div>
+                  <div className="anime-text-pixel text-white text-sm mb-2">{anime.name}</div>
+                  <div className="text-xs text-gray-300 mb-3">{anime.mode}</div>
+                  {badgeInfo && (
+                    <div className="flex items-center justify-center space-x-1">
+                      <span className="text-lg">{badgeInfo.emoji}</span>
+                      <span className="anime-text-pixel text-xs text-yellow-400">{badgeInfo.name}</span>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-                {/* Top Users */}
-                <div className="space-y-3">
-                  {selectedLeaderboard.topUsers.map((user, index) => {
+          {/* Global Leaderboard Table */}
+          <div className="neon-card p-6 mx-4 mb-6">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b-2 border-cyan-400">
+                    <th className="anime-text-pixel text-left py-3 text-cyan-400">Rank</th>
+                    <th className="anime-text-pixel text-left py-3 text-cyan-400">Player</th>
+                    <th className="anime-text-pixel text-center py-3 text-cyan-400">Score</th>
+                    <th className="anime-text-pixel text-center py-3 text-cyan-400">⭐ Score</th>
+                    <th className="anime-text-pixel text-center py-3 text-cyan-400">⭐ Badges</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5} className="text-center py-8">
+                        <div className="anime-loading mx-auto"></div>
+                        <div className="anime-text-pixel text-cyan-400 mt-2">LOADING...</div>
+                      </td>
+                    </tr>
+                  ) : globalLeaderboard?.topUsers.map((user, index) => {
+                    const isCurrentUser = globalLeaderboard.userEntries.some(entry => entry.username === user.username);
                     const badgeInfo = getBadgeInfo(user.badgeLevel);
-                    const isCurrentUser = selectedLeaderboard.userStats?.username === user.username;
                     
                     return (
-                      <div
-                        key={user.username}
-                        className={`flex items-center justify-between p-4 rounded-lg border ${
-                          isCurrentUser 
-                            ? 'bg-yellow-50 border-yellow-300' 
-                            : 'bg-white border-gray-200'
+                      <tr 
+                        key={`${user.username}-${user.anime}`}
+                        className={`border-b border-gray-600 ${
+                          isCurrentUser ? 'bg-green-500/20' : 'hover:bg-cyan-400/10'
                         }`}
                       >
-                        <div className="flex items-center space-x-4">
-                          <div className="text-center min-w-[40px]">
-                            {index === 0 && <span className="text-2xl">🥇</span>}
-                            {index === 1 && <span className="text-2xl">🥈</span>}
-                            {index === 2 && <span className="text-2xl">🥉</span>}
-                            {index > 2 && (
-                              <span className="text-lg font-bold text-gray-500">
-                                #{index + 1}
+                        <td className="py-3">
+                          <div className="flex items-center">
+                            {index === 0 && <span className="text-2xl mr-2">🥇</span>}
+                            {index === 1 && <span className="text-2xl mr-2">🥈</span>}
+                            {index === 2 && <span className="text-2xl mr-2">🥉</span>}
+                            <span className="anime-text-pixel text-white">
+                              {index < 3 ? '' : `${index + 1}st`}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3">
+                          <div className="anime-text-pixel text-white">
+                            u/{user.username}
+                            {isCurrentUser && (
+                              <span className="ml-2 text-xs bg-green-500 text-black px-2 py-1 rounded">
+                                You
                               </span>
                             )}
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-800">
-                              {user.username}
-                              {isCurrentUser && (
-                                <span className="ml-2 text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
-                                  You
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {user.puzzlesSolved} puzzles solved
-                            </div>
+                          <div className="text-xs text-gray-400">{user.anime}</div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="anime-text-pixel text-white">{user.totalScore.toLocaleString()}</div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="anime-text-pixel text-yellow-400">{user.averageScore}</div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="flex items-center justify-center space-x-1">
+                            <span className="text-lg">{badgeInfo.emoji}</span>
+                            <span className="text-lg">{badgeInfo.emoji}</span>
                           </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <div className="flex items-center space-x-3">
-                            <div>
-                              <div className="font-bold text-gray-800">
-                                {user.averageScore}
-                              </div>
-                              <div className="text-xs text-gray-500">avg score</div>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <span className="text-lg">{badgeInfo.emoji}</span>
-                              <span className={`text-xs font-medium ${badgeInfo.color}`}>
-                                {badgeInfo.name}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                        </td>
+                      </tr>
                     );
                   })}
-                </div>
-
-                {selectedLeaderboard.topUsers.length === 0 && (
-                  <div className="text-center py-12 text-gray-500">
-                    <div className="text-4xl mb-4">🎌</div>
-                    <p>No one has solved puzzles for this anime yet.</p>
-                    <p className="text-sm mt-2">Be the first to claim the top spot!</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                Select an anime to view its leaderboard
-              </div>
-            )}
+                  
+                  {/* Current User Row if not in top users */}
+                  {globalLeaderboard?.userRank && globalLeaderboard.userRank > 20 && globalLeaderboard.userEntries.length > 0 && (
+                    <>
+                      <tr>
+                        <td colSpan={5} className="py-2 text-center">
+                          <div className="anime-text-pixel text-gray-500">...</div>
+                        </td>
+                      </tr>
+                      <tr className="bg-green-500/20 border-2 border-green-400">
+                        <td className="py-3">
+                          <span className="anime-text-pixel text-white">{globalLeaderboard.userRank}th</span>
+                        </td>
+                        <td className="py-3">
+                          <div className="anime-text-pixel text-white">
+                            u/WebMaster
+                            <span className="ml-2 text-xs bg-green-500 text-black px-2 py-1 rounded">
+                              You
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="anime-text-pixel text-white">
+                            {globalLeaderboard.userEntries[0]?.totalScore.toLocaleString() || '0'}
+                          </div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="anime-text-pixel text-yellow-400">
+                            {globalLeaderboard.userEntries[0]?.averageScore || '0'}
+                          </div>
+                        </td>
+                        <td className="py-3 text-center">
+                          <div className="flex items-center justify-center space-x-1">
+                            <span className="text-lg">⭐</span>
+                            <span className="text-lg">🔥</span>
+                          </div>
+                        </td>
+                      </tr>
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        {/* Badge Legend */}
-        <div className="bg-gray-50 border-t border-gray-200 p-4">
-          <div className="text-sm text-gray-600 mb-2 font-medium">Badge Levels:</div>
-          <div className="flex flex-wrap gap-4 text-xs">
-            {[
-              { level: 'bronze', name: 'Apprentice', emoji: '🥉', req: '3+ puzzles' },
-              { level: 'silver', name: 'Scholar', emoji: '🥈', req: '5+ puzzles, 75+ avg' },
-              { level: 'gold', name: 'Expert', emoji: '🥇', req: '8+ puzzles, 100+ avg' },
-              { level: 'platinum', name: 'Master', emoji: '💎', req: '12+ puzzles, 150+ avg' },
-              { level: 'master', name: 'Legendary', emoji: '👑', req: '15+ puzzles, 200+ avg' }
-            ].map((badge) => (
-              <div key={badge.level} className="flex items-center space-x-1">
-                <span>{badge.emoji}</span>
-                <span className="font-medium">{badge.name}</span>
-                <span className="text-gray-500">({badge.req})</span>
-              </div>
-            ))}
+          {/* Back to Menu Button */}
+          <div className="text-center">
+            <button
+              onClick={onClose}
+              className="neon-button"
+            >
+              ← BACK TO MENU
+            </button>
           </div>
         </div>
       </div>

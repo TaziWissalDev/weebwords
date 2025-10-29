@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimePuzzle } from '../../shared/types/puzzle';
 
 interface QuoteDisplayProps {
@@ -6,23 +6,46 @@ interface QuoteDisplayProps {
   placedTiles: { [key: number]: string };
   onTileReturn: (blankIndex: number) => void;
   onTileDrop: (tileText: string, blankIndex: number) => void;
+  hintsUsed?: number;
+  showHints?: boolean;
 }
 
 export const QuoteDisplay: React.FC<QuoteDisplayProps> = ({
   puzzle,
   placedTiles,
   onTileReturn,
-  onTileDrop
+  onTileDrop,
+  hintsUsed = 0,
+  showHints = false
 }) => {
+  const [revealedWords, setRevealedWords] = useState<Set<number>>(new Set());
+
+  // Reveal words based on hints used
+  useEffect(() => {
+    if (showHints && hintsUsed > 0) {
+      const newRevealed = new Set<number>();
+      // Reveal one word per hint used
+      for (let i = 0; i < Math.min(hintsUsed, puzzle.blanks.length); i++) {
+        newRevealed.add(i);
+      }
+      setRevealedWords(newRevealed);
+    }
+  }, [hintsUsed, showHints, puzzle.blanks.length]);
   const renderQuoteWithBlanks = () => {
     const parts = puzzle.quote_puzzle.split('____');
     const elements: React.ReactNode[] = [];
     
     parts.forEach((part, index) => {
-      // Add the text part
+      // Add the text part with potential blur effect
       if (part) {
+        const shouldBlur = !showHints && hintsUsed === 0 && part.trim().length > 3;
         elements.push(
-          <span key={`text-${index}`} className="text-gray-800">
+          <span 
+            key={`text-${index}`} 
+            className={`transition-all duration-500 ${
+              shouldBlur ? 'blur-sm opacity-60' : 'blur-none opacity-100'
+            }`}
+          >
             {part}
           </span>
         );
@@ -32,14 +55,18 @@ export const QuoteDisplay: React.FC<QuoteDisplayProps> = ({
       if (index < parts.length - 1) {
         const blankIndex = index;
         const placedTile = placedTiles[blankIndex];
+        const isRevealed = revealedWords.has(blankIndex);
+        const correctAnswer = puzzle.blanks[blankIndex];
         
         elements.push(
           <div
             key={`blank-${blankIndex}`}
-            className={`inline-block min-w-[60px] sm:min-w-[80px] h-8 sm:h-10 mx-0.5 sm:mx-1 px-2 sm:px-3 py-1 sm:py-2 border-2 rounded-lg text-center cursor-pointer transition-all text-xs sm:text-sm font-bold ${
+            className={`inline-flex items-center justify-center min-w-[80px] sm:min-w-[100px] h-10 sm:h-12 mx-1 px-3 py-2 border-2 rounded-lg text-center cursor-pointer transition-all font-bold text-sm sm:text-base ${
               placedTile 
-                ? 'anime-gradient-success text-white border-white/50 animate-glow shadow-lg' 
-                : 'border-white/50 bg-white/20 hover:bg-white/30 text-white animate-pulse'
+                ? 'bg-yellow-400 text-black border-yellow-600 shadow-lg transform hover:scale-105' 
+                : isRevealed
+                  ? 'bg-green-400/20 text-green-300 border-green-400 animate-pulse'
+                  : 'border-cyan-400/50 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300'
             }`}
             onClick={() => placedTile && onTileReturn(blankIndex)}
             onDragOver={(e) => e.preventDefault()}
@@ -51,7 +78,7 @@ export const QuoteDisplay: React.FC<QuoteDisplayProps> = ({
               }
             }}
           >
-            {placedTile || '____'}
+            {placedTile || (isRevealed ? `${correctAnswer}?` : '____')}
           </div>
         );
       }
@@ -61,31 +88,45 @@ export const QuoteDisplay: React.FC<QuoteDisplayProps> = ({
   };
 
   return (
-    <div className="anime-card rounded-xl shadow-2xl p-3 sm:p-6 anime-card-hover animate-slide-in">
-      {/* Anime and Character Info */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
-        <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-blue-500 to-purple-600"></div>
-          <span className="text-sm font-medium text-gray-600">{puzzle.anime}</span>
+    <div className="neon-card p-4 sm:p-6 animate-slide-in relative overflow-hidden">
+      <div className="cyber-grid opacity-20"></div>
+      <div className="relative z-10">
+        {/* Anime and Character Info */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 space-y-2 sm:space-y-0">
+          <div className="flex items-center space-x-3">
+            <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
+            <span className="anime-text-pixel text-sm text-white">{puzzle.anime}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <span className="anime-text-pixel text-xs text-gray-400">Character:</span>
+            <span className="anime-text-pixel text-xs text-cyan-400">{puzzle.character}</span>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <span className="text-xs sm:text-sm text-gray-500">Character:</span>
-          <span className="text-xs sm:text-sm font-medium text-gray-700">{puzzle.character}</span>
+        
+        {/* Quote with Blanks - Responsive Container */}
+        <div className="bg-purple-900/50 rounded-lg border-2 border-cyan-400/50 p-4 sm:p-6 mb-4">
+          <div className="text-center">
+            <div className="text-base sm:text-lg lg:text-xl leading-relaxed text-white font-medium flex flex-wrap items-center justify-center gap-1 sm:gap-2">
+              {renderQuoteWithBlanks()}
+            </div>
+          </div>
         </div>
-      </div>
-      
-      {/* Quote with Blanks */}
-      <div className="text-base sm:text-lg leading-relaxed text-center py-4 sm:py-8 px-2 sm:px-4 anime-gradient-primary rounded-lg border-2 border-white/30 text-white font-semibold anime-text-glow">
-        <div className="flex flex-wrap items-center justify-center gap-1">
-          {renderQuoteWithBlanks()}
+        
+        {/* Instructions */}
+        <div className="text-center">
+          <p className="anime-text-pixel text-xs text-gray-400">
+            {hintsUsed > 0 ? 'HINTS REVEALED SOME WORDS!' : 'DRAG TILES TO BLANKS • TAP TO SELECT ON MOBILE'}
+          </p>
         </div>
-      </div>
-      
-      {/* Instructions */}
-      <div className="mt-4 text-center">
-        <p className="text-xs sm:text-sm text-gray-500">
-          Drag tiles from below to fill in the blanks, or tap on placed tiles to remove them
-        </p>
+        
+        {/* Hidden Message Indicator */}
+        {!showHints && hintsUsed === 0 && (
+          <div className="mt-2 text-center">
+            <p className="anime-text-pixel text-xs text-yellow-400 animate-pulse">
+              💡 USE HINTS TO REVEAL HIDDEN CLUES
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

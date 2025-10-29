@@ -1,5 +1,6 @@
 import { GamePuzzle, GameStats, AnimePuzzle, CharacterQuiz } from '../../shared/types/puzzle';
 import { PuzzleTracker } from './puzzleTracker';
+import { ALL_COMPREHENSIVE_PUZZLES_FINAL } from './comprehensivePuzzles';
 
 // Mock anime puzzles
 const MOCK_ANIME_PUZZLES: AnimePuzzle[] = [
@@ -334,7 +335,7 @@ export class MockDataService {
     const quizType = Math.random() < 0.5 ? 'word-puzzle' : 'character-guess';
     
     if (quizType === 'word-puzzle') {
-      let filteredPuzzles = MOCK_ANIME_PUZZLES;
+      let filteredPuzzles = ALL_COMPREHENSIVE_PUZZLES_FINAL;
       
       // Filter by difficulty
       if (difficulty) {
@@ -361,20 +362,20 @@ export class MockDataService {
         
         // First fallback: try just anime filter (ignore difficulty)
         if (anime && anime !== 'Mixed') {
-          filteredPuzzles = MOCK_ANIME_PUZZLES.filter(p => p.anime === anime);
+          filteredPuzzles = ALL_COMPREHENSIVE_PUZZLES_FINAL.filter(p => p.anime === anime);
           console.log('🔄 Fallback 1: Found puzzles for anime only:', filteredPuzzles.length);
         }
         
         // Second fallback: try just difficulty filter (ignore anime)
         if (filteredPuzzles.length === 0 && difficulty) {
-          filteredPuzzles = MOCK_ANIME_PUZZLES.filter(p => p.difficulty === difficulty);
+          filteredPuzzles = ALL_COMPREHENSIVE_PUZZLES_FINAL.filter(p => p.difficulty === difficulty);
           console.log('🔄 Fallback 2: Found puzzles for difficulty only:', filteredPuzzles.length);
         }
         
         // Final fallback: all puzzles
         if (filteredPuzzles.length === 0) {
           console.log('🔄 Final fallback: Using all puzzles');
-          filteredPuzzles = MOCK_ANIME_PUZZLES;
+          filteredPuzzles = ALL_COMPREHENSIVE_PUZZLES_FINAL;
         }
       }
       

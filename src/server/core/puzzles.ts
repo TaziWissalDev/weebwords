@@ -325,8 +325,16 @@ export function getRandomPuzzle(difficulty?: 'easy' | 'medium' | 'hard'): GamePu
       ? ANIME_PUZZLES.filter(p => p.difficulty === difficulty)
       : ANIME_PUZZLES;
     
+    if (filteredPuzzles.length === 0) {
+      throw new Error('No puzzles found for the specified difficulty');
+    }
+    
     const randomIndex = Math.floor(Math.random() * filteredPuzzles.length);
     const puzzle = filteredPuzzles[randomIndex];
+    
+    if (!puzzle) {
+      throw new Error('Failed to select a puzzle');
+    }
     
     return {
       type: 'word-puzzle',
@@ -340,8 +348,16 @@ export function getRandomPuzzle(difficulty?: 'easy' | 'medium' | 'hard'): GamePu
       ? CHARACTER_QUIZZES.filter(q => q.difficulty === difficulty)
       : CHARACTER_QUIZZES;
     
+    if (filteredQuizzes.length === 0) {
+      throw new Error('No character quizzes found for the specified difficulty');
+    }
+    
     const randomIndex = Math.floor(Math.random() * filteredQuizzes.length);
     const quiz = filteredQuizzes[randomIndex];
+    
+    if (!quiz) {
+      throw new Error('Failed to select a character quiz');
+    }
     
     return {
       type: 'character-guess',
@@ -378,7 +394,9 @@ export function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    const temp = shuffled[i]!;
+    shuffled[i] = shuffled[j]!;
+    shuffled[j] = temp;
   }
   return shuffled;
 }

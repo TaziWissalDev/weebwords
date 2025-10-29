@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SplashScreen } from './components/SplashScreen';
+import { HomePage } from './components/HomePage';
 import { PuzzleGame } from './components/PuzzleGame';
 import { DifficultySelector } from './components/DifficultySelector';
 import { AnimeSelector } from './components/AnimeSelector';
@@ -9,7 +10,7 @@ import { DailyPackGame } from './components/DailyPackGame';
 import { GamePuzzle, GameStats } from '../shared/types/puzzle';
 import { MockDataService } from './services/mockData';
 
-type GameState = 'splash' | 'difficulty' | 'animeSelection' | 'playing' | 'gameOver' | 'badges' | 'dailyPack';
+type GameState = 'splash' | 'home' | 'difficulty' | 'animeSelection' | 'playing' | 'gameOver' | 'badges' | 'dailyPack';
 
 export const App = () => {
   const [gameState, setGameState] = useState<GameState>('splash');
@@ -46,6 +47,10 @@ export const App = () => {
 
   const handleDailyPack = () => {
     setGameState('dailyPack');
+  };
+
+  const handleGoToHome = () => {
+    setGameState('home');
   };
 
   const handleSelectDifficulty = (difficulty: 'easy' | 'medium' | 'hard' | 'mixed') => {
@@ -111,7 +116,7 @@ export const App = () => {
 
   const handleBackToMenu = () => {
     setGameStats(MockDataService.getInitialGameStats());
-    setGameState('splash');
+    setGameState('home');
   };
 
   const handleBackToDifficulty = () => {
@@ -150,7 +155,10 @@ export const App = () => {
 
   switch (gameState) {
     case 'splash':
-      return <SplashScreen onPlay={handleStartGame} onDailyPack={handleDailyPack} username={username} />;
+      return <SplashScreen onPlay={handleGoToHome} onDailyPack={handleDailyPack} username={username} />;
+    
+    case 'home':
+      return <HomePage username={username} onStartGame={handleStartGame} onDailyChallenge={handleDailyPack} />;
     
     case 'difficulty':
       return (

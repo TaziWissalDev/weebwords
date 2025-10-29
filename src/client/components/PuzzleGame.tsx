@@ -481,6 +481,8 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
                   placedTiles={puzzleState.placedTiles}
                   onTileReturn={handleTileReturn}
                   onTileDrop={handleTileDrop}
+                  hintsUsed={puzzleState.hintsUsed}
+                  showHints={showHints}
                 />
 
                 {/* Tile Board */}

@@ -42,11 +42,9 @@ export interface CharacterQuiz {
 
 export type QuizType = 'word-puzzle' | 'character-guess';
 
-export interface GamePuzzle {
-  type: QuizType;
-  wordPuzzle?: AnimePuzzle;
-  characterQuiz?: CharacterQuiz;
-}
+export type GamePuzzle = 
+  | { type: 'word-puzzle'; wordPuzzle: AnimePuzzle }
+  | { type: 'character-guess'; characterQuiz: CharacterQuiz };
 
 export interface PuzzleState {
   currentPuzzle: AnimePuzzle | null;

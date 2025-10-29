@@ -1,11 +1,18 @@
 import express from 'express';
 import { InitResponse, GetPuzzleResponse, SubmitSolutionRequest, SubmitSolutionResponse, SubmitCharacterGuessRequest, GetHintRequest, GetHintResponse, GetLeaderboardResponse } from '../shared/types/api';
-import { DailyPack, ScoreSubmission, LeaderboardResponse, PuzzleType } from '../shared/types/daily-pack';
 import { redis, reddit, createServer, context, getServerPort } from '@devvit/web/server';
 import { createPost } from './core/post';
-import { getRandomPuzzle, getPuzzleById, validateSolution, shuffleArray, getCharacterQuizById, validateCharacterGuess } from './core/puzzles';
+import { getRandomPuzzle, getPuzzleById, validateSolution, getCharacterQuizById, validateCharacterGuess } from './core/puzzles';
 import { GameStats } from '../shared/types/puzzle';
-import { updateUserAnimeStats, getAllLeaderboards, getUserBadges } from './core/leaderboard';
+import { 
+  updateUserAnimeStats, 
+  getAllLeaderboards, 
+  getUserBadges, 
+  getAnimeLeaderboard,
+  getGlobalLeaderboard,
+  getTotalPlayersForAnime
+} from './core/leaderboard';
+import { DatabaseService } from './services/databaseService';
 import { DailyPuzzleManager } from './services/dailyPuzzleManager';
 // import { DatabaseService } from './services/database';
 // import { PackGenerator } from './services/pack-generator';
@@ -26,7 +33,7 @@ let dailyPuzzleManager: DailyPuzzleManager | null = null;
 try {
   dailyPuzzleManager = new DailyPuzzleManager();
 } catch (error) {
-  console.warn('⚠️ Daily puzzle manager not initialized:', error.message);
+  console.warn('⚠️ Daily puzzle manager not initialized:', error instanceof Error ? error.message : 'Unknown error');
 }
 
 const router = express.Router();
@@ -48,14 +55,48 @@ router.get<{ postId: string }, InitResponse | { status: string; message: string 
     try {
       const username = await reddit.getCurrentUsername();
       
-      // Get or initialize game stats
-      const statsKey = `stats:${username}`;
-      const statsData = await redis.get(statsKey);
-      const gameStats: GameStats = statsData ? JSON.parse(statsData) : {
-        totalPuzzlesSolved: 0,
-        averageHintsUsed: 0,
-        favoriteAnime: '',
-        currentStreak: 0
+      if (!username) {
+        res.status(401).json({
+          status: 'error',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      
+      // Get or create user in database
+      let user = await DatabaseService.getUser(username);
+      if (!user) {
+        user = await DatabaseService.createOrUpdateUser(username, {});
+        await DatabaseService.registerUser(username);
+      }
+
+      // Update energy if needed (every 10 minutes)
+      const now = Date.now();
+      const lastReset = new Date(user.last_energy_reset).getTime();
+      const timeDiff = now - lastReset;
+      const resetInterval = 10 * 60 * 1000; // 10 minutes
+
+      if (timeDiff >= resetInterval) {
+        const energyToAdd = Math.floor(timeDiff / resetInterval);
+        const newEnergy = Math.min(user.energy + energyToAdd, user.max_energy);
+        user = await DatabaseService.updateUserEnergy(username, newEnergy);
+      }
+
+      // Convert to GameStats format
+      const gameStats: GameStats = {
+        totalPuzzlesSolved: user.total_puzzles_solved,
+        averageHintsUsed: 0, // Calculate from recent games
+        favoriteAnime: user.favorite_anime || '',
+        currentStreak: user.current_streak,
+        hearts: user.hearts,
+        maxHearts: user.max_hearts,
+        energy: user.energy,
+        maxEnergy: user.max_energy,
+        lastEnergyReset: new Date(user.last_energy_reset).getTime(),
+        badges: [],
+        unlockedBadges: [],
+        level: user.level,
+        experience: user.experience
       };
 
       // Get current puzzle or create new one
@@ -95,6 +136,14 @@ router.get<{}, GetPuzzleResponse | { status: string; message: string }>(
     try {
       const username = await reddit.getCurrentUsername();
       const { anime, difficulty, useDailyPuzzles } = req.query;
+      
+      if (!username) {
+        res.status(401).json({
+          status: 'error',
+          message: 'User not authenticated'
+        });
+        return;
+      }
       
       let puzzle;
       
@@ -141,6 +190,14 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
       const { puzzleId, solution, hintsUsed } = req.body;
       const username = await reddit.getCurrentUsername();
       
+      if (!username) {
+        res.status(401).json({
+          status: 'error',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      
       const gamePuzzle = getPuzzleById(puzzleId);
       if (!gamePuzzle || gamePuzzle.type !== 'word-puzzle' || !gamePuzzle.wordPuzzle) {
         res.status(404).json({
@@ -183,8 +240,28 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
         
         await redis.set(statsKey, JSON.stringify(gameStats));
         
-        // Update anime-specific leaderboard stats
-        await updateUserAnimeStats(username, puzzle.anime, score);
+        // Update database with score and stats
+        await DatabaseService.addPuzzleScore(username, {
+          puzzle_id: puzzleId,
+          puzzle_type: 'word-puzzle',
+          anime: puzzle.anime,
+          character: puzzle.character,
+          difficulty: puzzle.difficulty,
+          score,
+          max_possible_score: baseScore,
+          hints_used: hintsUsed,
+          date: new Date().toISOString().split('T')[0]
+        });
+
+        // Update global leaderboard
+        await DatabaseService.updateGlobalLeaderboard(username);
+        
+        // Track daily stats
+        await DatabaseService.incrementDailyStats('puzzles_solved');
+        await DatabaseService.incrementDailyStats('total_score', score);
+
+        // Update anime-specific leaderboard stats (legacy)
+        await updateUserAnimeStats(username, puzzle.anime, score, puzzle.difficulty, 'word-puzzle');
         
         // Generate next puzzle
         const nextPuzzle = getRandomPuzzle();
@@ -290,6 +367,14 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
       const { quizId, guess, hintsUsed } = req.body;
       const username = await reddit.getCurrentUsername();
       
+      if (!username) {
+        res.status(401).json({
+          status: 'error',
+          message: 'User not authenticated'
+        });
+        return;
+      }
+      
       const quiz = getCharacterQuizById(quizId);
       if (!quiz) {
         res.status(404).json({
@@ -331,8 +416,28 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
         
         await redis.set(statsKey, JSON.stringify(gameStats));
         
-        // Update anime-specific leaderboard stats
-        await updateUserAnimeStats(username, quiz.anime, score);
+        // Update database with score and stats
+        await DatabaseService.addPuzzleScore(username, {
+          puzzle_id: quizId,
+          puzzle_type: 'character-guess',
+          anime: quiz.anime,
+          character: quiz.character,
+          difficulty: quiz.difficulty,
+          score,
+          max_possible_score: baseScore,
+          hints_used: hintsUsed,
+          date: new Date().toISOString().split('T')[0]
+        });
+
+        // Update global leaderboard
+        await DatabaseService.updateGlobalLeaderboard(username);
+        
+        // Track daily stats
+        await DatabaseService.incrementDailyStats('puzzles_solved');
+        await DatabaseService.incrementDailyStats('total_score', score);
+
+        // Update anime-specific leaderboard stats (legacy)
+        await updateUserAnimeStats(username, quiz.anime, score, quiz.difficulty, 'character-guess');
         
         // Generate next puzzle
         const nextPuzzle = getRandomPuzzle();
@@ -372,21 +477,43 @@ router.post<{}, SubmitSolutionResponse | { status: string; message: string }, Su
   }
 );
 
-// Leaderboard API Endpoints
+// Comprehensive Leaderboard API Endpoints
 router.get<{}, GetLeaderboardResponse | { status: string; message: string }>(
   '/api/leaderboard',
-  async (_req, res): Promise<void> => {
+  async (req, res): Promise<void> => {
     try {
       const username = await reddit.getCurrentUsername();
+      const { anime } = req.query;
       
-      const leaderboards = await getAllLeaderboards(username);
-      const userBadges = await getUserBadges(username);
+      if (!username) {
+        res.status(401).json({
+          status: 'error',
+          message: 'User not authenticated'
+        });
+        return;
+      }
       
-      res.json({
-        type: 'leaderboard',
-        leaderboards,
-        userBadges
-      });
+      if (anime && anime !== 'all') {
+        // Get specific anime leaderboard
+        const leaderboard = await getAnimeLeaderboard(anime as string, username);
+        const userBadges = await getUserBadges(username);
+        
+        res.json({
+          type: 'leaderboard',
+          leaderboards: [leaderboard],
+          userBadges
+        });
+      } else {
+        // Get all leaderboards
+        const leaderboards = await getAllLeaderboards(username);
+        const userBadges = await getUserBadges(username);
+        
+        res.json({
+          type: 'leaderboard',
+          leaderboards,
+          userBadges
+        });
+      }
     } catch (error) {
       console.error('Error getting leaderboards:', error);
       res.status(500).json({
@@ -396,6 +523,269 @@ router.get<{}, GetLeaderboardResponse | { status: string; message: string }>(
     }
   }
 );
+
+// Global leaderboard endpoint
+router.get('/api/leaderboard/global', async (_req, res): Promise<void> => {
+  try {
+    const username = await reddit.getCurrentUsername();
+    
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated'
+      });
+      return;
+    }
+    
+    const globalLeaderboard = await getGlobalLeaderboard(username);
+    
+    res.json({
+      type: 'global-leaderboard',
+      ...globalLeaderboard
+    });
+  } catch (error) {
+    console.error('Error getting global leaderboard:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get global leaderboard'
+    });
+  }
+});
+
+// Submit score endpoint
+router.post('/api/leaderboard/score', async (req, res): Promise<void> => {
+  try {
+    const { anime, score, difficulty, puzzleType } = req.body;
+    const username = await reddit.getCurrentUsername();
+    
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated'
+      });
+      return;
+    }
+    
+    if (!anime || typeof score !== 'number') {
+      res.status(400).json({
+        status: 'error',
+        message: 'Anime and score are required'
+      });
+      return;
+    }
+    
+    // Update user stats and leaderboard
+    await updateUserAnimeStats(username, anime, score, difficulty, puzzleType);
+    
+    // Get updated rank
+    const leaderboard = await getAnimeLeaderboard(anime, username);
+    const userRank = leaderboard.userRank || 0;
+    
+    res.json({
+      status: 'success',
+      message: 'Score submitted successfully',
+      newRank: userRank,
+      anime,
+      score
+    });
+  } catch (error) {
+    console.error('Error submitting score:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to submit score'
+    });
+  }
+});
+
+// Get user rank endpoint
+router.get('/api/leaderboard/rank/:anime', async (req, res): Promise<void> => {
+  try {
+    const { anime } = req.params;
+    const username = await reddit.getCurrentUsername();
+    
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated'
+      });
+      return;
+    }
+    
+    const leaderboard = await getAnimeLeaderboard(anime, username);
+    
+    res.json({
+      anime,
+      rank: leaderboard.userRank || 0,
+      stats: leaderboard.userStats,
+      totalPlayers: await getTotalPlayersForAnime(anime)
+    });
+  } catch (error) {
+    console.error('Error getting user rank:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get user rank'
+    });
+  }
+});
+
+// Get user's complete profile
+router.get('/api/profile', async (_req, res): Promise<void> => {
+  try {
+    const username = await reddit.getCurrentUsername();
+    
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated'
+      });
+      return;
+    }
+    
+    const user = await DatabaseService.getUser(username);
+    const badges = await DatabaseService.getUserBadges(username);
+    
+    if (!user) {
+      res.status(404).json({
+        status: 'error',
+        message: 'User not found'
+      });
+      return;
+    }
+
+    res.json({
+      type: 'profile',
+      username: user.username,
+      totalScore: user.total_score,
+      totalPuzzlesSolved: user.total_puzzles_solved,
+      currentStreak: user.current_streak,
+      bestStreak: user.best_streak,
+      favoriteAnime: user.favorite_anime,
+      level: user.level,
+      experience: user.experience,
+      hearts: user.hearts,
+      maxHearts: user.max_hearts,
+      energy: user.energy,
+      maxEnergy: user.max_energy,
+      badges
+    });
+  } catch (error) {
+    console.error('Error getting user profile:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get user profile'
+    });
+  }
+});
+
+// Home page statistics
+router.get('/api/home/stats', async (_req, res): Promise<void> => {
+  try {
+    const homeStats = await DatabaseService.getHomePageStats();
+    
+    res.json({
+      type: 'home-stats',
+      ...homeStats
+    });
+  } catch (error) {
+    console.error('Error getting home stats:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get home statistics'
+    });
+  }
+});
+
+// Daily challenge leaderboard
+router.get('/api/daily-challenge/leaderboard', async (req, res): Promise<void> => {
+  try {
+    const { date } = req.query;
+    const challengeDate = (typeof date === 'string' && date) ? date : new Date().toISOString().split('T')[0];
+    
+    const leaderboard = await DatabaseService.getDailyLeaderboard(challengeDate as string, 20);
+    
+    res.json({
+      type: 'daily-challenge-leaderboard',
+      date: challengeDate,
+      leaderboard
+    });
+  } catch (error) {
+    console.error('Error getting daily challenge leaderboard:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get daily challenge leaderboard'
+    });
+  }
+});
+
+// Submit daily challenge score
+router.post('/api/daily-challenge/score', async (req, res): Promise<void> => {
+  try {
+    const { score, completion_time, puzzles_completed, hints_used } = req.body;
+    const username = await reddit.getCurrentUsername();
+    
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated'
+      });
+      return;
+    }
+    
+    const challengeDate = new Date().toISOString().split('T')[0];
+    
+    const challengeScore = await DatabaseService.addDailyChallengeScore(username as string, challengeDate, {
+      score,
+      completion_time,
+      puzzles_completed,
+      hints_used
+    });
+    
+    // Update daily stats
+    await DatabaseService.incrementDailyStats('daily_challenges_completed');
+    await DatabaseService.incrementDailyStats('daily_challenge_score', score);
+    
+    res.json({
+      status: 'success',
+      message: 'Daily challenge score submitted',
+      challengeScore
+    });
+  } catch (error) {
+    console.error('Error submitting daily challenge score:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to submit daily challenge score'
+    });
+  }
+});
+
+// Update user hearts (when spending on hints)
+router.post('/api/user/hearts', async (req, res): Promise<void> => {
+  try {
+    const { hearts } = req.body;
+    const username = await reddit.getCurrentUsername();
+    
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated'
+      });
+      return;
+    }
+    
+    const user = await DatabaseService.updateUserHearts(username, hearts);
+    
+    res.json({
+      status: 'success',
+      hearts: user?.hearts || 0
+    });
+  } catch (error) {
+    console.error('Error updating user hearts:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to update hearts'
+    });
+  }
+});
 
 // Daily Puzzle API Endpoints
 router.get('/api/daily-puzzles', async (_req, res): Promise<void> => {
