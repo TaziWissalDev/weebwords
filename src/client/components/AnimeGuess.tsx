@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { AnimeGuessQuiz, AnimeGuessState } from '../../shared/types/animeGuess';
+import { AnimeGuessQuiz, AnimeGuessState } from '../../shared/types/animeGuess.js';
 import { GameStats } from '../../shared/types/puzzle';
 import { useSound } from '../hooks/useSound';
 
 interface AnimeGuessProps {
   initialQuiz: AnimeGuessQuiz;
-  username: string;
+  username?: string;
   gameStats: GameStats;
-  selectedDifficulty: string;
+  selectedDifficulty?: string;
   onQuizComplete: (score: number, isCorrect: boolean) => void;
   onWrongAnswer: () => void;
   onBackToDifficulty: () => void;
@@ -16,9 +16,7 @@ interface AnimeGuessProps {
 
 export const AnimeGuess: React.FC<AnimeGuessProps> = ({
   initialQuiz,
-  username,
   gameStats,
-  selectedDifficulty,
   onQuizComplete,
   onWrongAnswer,
   onBackToDifficulty,
@@ -55,7 +53,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
     }
 
     const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
+      setTimeRemaining((prev: number) => {
         if (prev <= 1) {
           // Time's up - auto submit or mark as wrong
           setIsTimerActive(false);
@@ -81,7 +79,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
   useEffect(() => {
     setTimeRemaining(20);
     setIsTimerActive(true);
-    setQuizState((prev) => ({
+    setQuizState((prev: AnimeGuessState) => ({
       ...prev,
       currentQuiz: initialQuiz,
       selectedAnswer: null,
@@ -116,7 +114,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
     setIsTimerActive(false);
     setFeedback(`⏰ Time's up! The correct answer was ${quizState.currentQuiz.correctAnime}`);
 
-    setQuizState((prev) => ({
+    setQuizState((prev: AnimeGuessState) => ({
       ...prev,
       isCompleted: true,
       isCorrect: false,
@@ -142,7 +140,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
     if (quizState.isCompleted || !isTimerActive) return;
 
     sounds.click();
-    setQuizState((prev) => ({
+    setQuizState((prev: AnimeGuessState) => ({
       ...prev,
       selectedAnswer: answer,
     }));
@@ -153,7 +151,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
 
     sounds.hint();
     setShowHints(true);
-    setQuizState((prev) => ({
+    setQuizState((prev: AnimeGuessState) => ({
       ...prev,
       hintsUsed: prev.hintsUsed + 1,
     }));
@@ -185,7 +183,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
         const isCorrect = result.isCorrect;
         const score = result.score;
 
-        setQuizState((prev) => ({
+        setQuizState((prev: AnimeGuessState) => ({
           ...prev,
           isCompleted: true,
           isCorrect,
@@ -297,7 +295,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
   return (
     <div className="cyberpunk-bg min-h-screen relative overflow-hidden">
       <div className="anime-particles">
-        {Array.from({ length: 15 }).map((_, i) => (
+        {Array.from({ length: 15 }).map((_, i: number) => (
           <div
             key={i}
             className="anime-particle"
@@ -342,7 +340,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
           <div className="text-right">
             <div className="text-sm text-white">Lives:</div>
             <div className="flex space-x-1">
-              {Array.from({ length: gameStats.maxHearts }).map((_, i) => (
+              {Array.from({ length: gameStats.maxHearts }).map((_, i: number) => (
                 <span key={i} className={i < gameStats.hearts ? 'text-red-500' : 'text-gray-400'}>
                   ❤️
                 </span>
@@ -476,7 +474,7 @@ export const AnimeGuess: React.FC<AnimeGuessProps> = ({
             SELECT THE CORRECT ANIME:
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {quizState.currentQuiz.options.map((option, index) => {
+            {quizState.currentQuiz.options.map((option: string, index: number) => {
               const isSelected = quizState.selectedAnswer === option;
               const isCorrect =
                 quizState.isCompleted && option === quizState.currentQuiz.correctAnime;
