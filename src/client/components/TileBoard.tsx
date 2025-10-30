@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSound } from '../hooks/useSound';
 
 interface TileBoardProps {
   availableTiles: string[];
@@ -6,6 +7,8 @@ interface TileBoardProps {
 }
 
 export const TileBoard: React.FC<TileBoardProps> = ({ availableTiles, onTileDrag }) => {
+  const { sounds } = useSound();
+
   return (
     <div className="neon-card p-4 sm:p-6 animate-slide-in relative overflow-hidden">
       <div className="cyber-grid"></div>
@@ -20,10 +23,12 @@ export const TileBoard: React.FC<TileBoardProps> = ({ availableTiles, onTileDrag
               key={`${tile}-${index}`}
               draggable
               onDragStart={(e) => {
+                sounds.click();
                 e.dataTransfer.setData('text/plain', tile);
                 onTileDrag(tile);
               }}
               onClick={() => {
+                sounds.click();
                 // For mobile: simulate drag by adding to a selected state
                 // This would need additional logic for mobile tap-to-place
               }}

@@ -124,9 +124,27 @@ export async function updateUserAnimeStats(
   await updateLeaderboard(anime, stats);
   await updateGlobalLeaderboard(stats);
   
-  // Track total players
-  await redis.sadd(`players:${anime}`, username);
-  await redis.sadd('players:global', username);
+  // Track total players using sets stored as JSON
+  const animePlayersKey = `players:${anime}`;
+  const globalPlayersKey = 'players:global';
+  
+  // Get existing player sets
+  const animePlayersData = await redis.get(animePlayersKey);
+  const globalPlayersData = await redis.get(globalPlayersKey);
+  
+  const animePlayers = animePlayersData ? JSON.parse(animePlayersData) : [];
+  const globalPlayers = globalPlayersData ? JSON.parse(globalPlayersData) : [];
+  
+  // Add player if not already in sets
+  if (!animePlayers.includes(username)) {
+    animePlayers.push(username);
+    await redis.set(animePlayersKey, JSON.stringify(animePlayers));
+  }
+  
+  if (!globalPlayers.includes(username)) {
+    globalPlayers.push(username);
+    await redis.set(globalPlayersKey, JSON.stringify(globalPlayers));
+  }
 }
 
 async function updateLeaderboard(anime: string, userStats: UserAnimeStats): Promise<void> {
@@ -256,7 +274,8 @@ export async function getGlobalLeaderboard(username?: string): Promise<{
   const globalData = await redis.get(globalKey);
   
   const allEntries: UserAnimeStats[] = globalData ? JSON.parse(globalData) : [];
-  const totalPlayers = await redis.scard('players:global');
+  const globalPlayersData = await redis.get('players:global');
+  const totalPlayers = globalPlayersData ? JSON.parse(globalPlayersData).length : 0;
   
   let userEntries: UserAnimeStats[] = [];
   let userRank: number | undefined;
@@ -283,7 +302,8 @@ export async function getGlobalLeaderboard(username?: string): Promise<{
 }
 
 export async function getTotalPlayersForAnime(anime: string): Promise<number> {
-  return await redis.scard(`players:${anime}`);
+  const animePlayersData = await redis.get(`players:${anime}`);
+  return animePlayersData ? JSON.parse(animePlayersData).length : 0;
 }
 
 export async function getUserProfile(username: string): Promise<{
@@ -371,13 +391,15 @@ export async function getLeaderboardStats(): Promise<{
   animeStats: { [anime: string]: { players: number; games: number } };
 }> {
   const animeList = [...new Set(ANIME_PUZZLES.map(p => p.anime))];
-  const totalPlayers = await redis.scard('players:global');
+  const globalPlayersData = await redis.get('players:global');
+  const totalPlayers = globalPlayersData ? JSON.parse(globalPlayersData).length : 0;
   
   const animeStats: { [anime: string]: { players: number; games: number } } = {};
   let totalGames = 0;
   
   for (const anime of animeList) {
-    const players = await redis.scard(`players:${anime}`);
+    const animePlayersData = await redis.get(`players:${anime}`);
+    const players = animePlayersData ? JSON.parse(animePlayersData).length : 0;
     
     // Count total games for this anime by summing all user stats
     const leaderboardKey = `leaderboard:${anime}`;

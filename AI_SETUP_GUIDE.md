@@ -13,22 +13,7 @@ The AI system generates **5 fresh puzzles per anime per difficulty level every d
 
 ## 🔑 API Key Setup
 
-### Option 1: Groq (Recommended - Fast & Often Free)
-
-1. **Sign up** at [https://console.groq.com](https://console.groq.com)
-2. **Create API key** in the dashboard
-3. **Add to environment**:
-   ```bash
-   GROQ_API_KEY=gsk_your_api_key_here
-   ```
-
-**Benefits:**
-
-- ⚡ Very fast generation (seconds)
-- 💰 Generous free tier
-- 🎯 Good quality puzzles
-
-### Option 2: OpenAI
+### Option 1: OpenAI (Recommended - Devvit Approved)
 
 1. **Sign up** at [https://platform.openai.com](https://platform.openai.com)
 2. **Create API key** in API settings
@@ -43,32 +28,32 @@ The AI system generates **5 fresh puzzles per anime per difficulty level every d
 - 📚 Excellent anime knowledge
 - 🎨 Creative puzzle variety
 
-### Option 3: Anthropic Claude
+### Option 2: Google Gemini (Alternative - Devvit Approved)
 
-1. **Sign up** at [https://console.anthropic.com](https://console.anthropic.com)
-2. **Create API key** in the dashboard
-3. **Add to environment**:
+1. **Sign up** at [https://console.cloud.google.com](https://console.cloud.google.com)
+2. **Enable Generative Language API**
+3. **Create API key** in credentials
+4. **Add to environment**:
    ```bash
-   ANTHROPIC_API_KEY=sk-ant-your_api_key_here
+   GOOGLE_API_KEY=your_google_api_key_here
    ```
 
 **Benefits:**
 
-- 🎭 Great character understanding
-- 📖 Detailed anime knowledge
-- 🔒 Strong safety features
+- 🧠 High-quality generation
+- 📚 Excellent anime knowledge
+- 🆓 Generous free tier
+- ✅ Devvit approved
 
 ## 🚀 Environment Setup
 
 ### Local Development (.env file)
 
 ```bash
-# Choose ONE of these providers
-GROQ_API_KEY=gsk_your_groq_key_here
-# OR
+# Choose ONE of these Devvit-approved providers
 OPENAI_API_KEY=sk-your_openai_key_here
 # OR
-ANTHROPIC_API_KEY=sk-ant-your_anthropic_key_here
+GOOGLE_API_KEY=your_google_api_key_here
 
 # Optional: Redis configuration (uses Devvit's Redis by default)
 # REDIS_URL=redis://localhost:6379
@@ -81,19 +66,19 @@ Set environment variables in your hosting platform:
 **Vercel:**
 
 ```bash
-vercel env add GROQ_API_KEY
+vercel env add OPENAI_API_KEY
 ```
 
 **Railway:**
 
 ```bash
-railway variables set GROQ_API_KEY=gsk_your_key_here
+railway variables set OPENAI_API_KEY=sk-your_key_here
 ```
 
 **Heroku:**
 
 ```bash
-heroku config:set GROQ_API_KEY=gsk_your_key_here
+heroku config:set OPENAI_API_KEY=sk-your_key_here
 ```
 
 ## 🎮 How It Works
@@ -237,7 +222,7 @@ try {
 ### Console Logging
 
 ```bash
-🤖 Using Groq AI for puzzle generation
+🤖 Using OpenAI/Gemini AI for puzzle generation
 🎯 Generating puzzles for 6 animes x 3 difficulties
 🎨 Generating Naruto easy puzzles...
 ✅ Generated 10 puzzles for Naruto easy
@@ -247,9 +232,9 @@ try {
 
 ## 💰 Cost Estimation
 
-### Groq (Recommended)
+### Google Gemini (Recommended)
 
-- **Free tier**: 14,400 requests/day
+- **Free tier**: 15 requests/minute, 1,500 requests/day
 - **Daily usage**: ~18 requests (6 animes × 3 difficulties)
 - **Cost**: FREE for most usage
 
@@ -259,11 +244,11 @@ try {
 - **Daily cost**: ~$0.18 (90 puzzles)
 - **Monthly cost**: ~$5.40
 
-### Anthropic Claude Haiku
+### Google Gemini Pro
 
-- **Cost**: ~$0.001 per puzzle generation
-- **Daily cost**: ~$0.09 (90 puzzles)
-- **Monthly cost**: ~$2.70
+- **Cost**: ~$0.0005 per puzzle generation
+- **Daily cost**: ~$0.045 (90 puzzles)
+- **Monthly cost**: ~$1.35
 
 ## 🚨 Troubleshooting
 

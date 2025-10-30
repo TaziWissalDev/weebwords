@@ -8,21 +8,21 @@ export const createPost = async () => {
 
   return await reddit.submitCustomPost({
     splash: {
-      // Splash Screen Configuration
-      appDisplayName: 'Anime Line',
+      // Pixel Art Anime Splash Screen Configuration
+      appDisplayName: 'Anime Pixel Quest',
       backgroundUri: 'default-splash.png',
-      buttonLabel: '🎮 Play Now',
-      description: 'Complete iconic anime quotes by dragging word tiles! Test your knowledge of Naruto, One Piece, JJK, and more!',
-      entryUri: 'index.html',
-      heading: 'Anime Line - Word Puzzle Game 🎌',
-      appIconUri: 'default-icon.png',
+      buttonLabel: '🥢 Play Now – Channel your inner sensei',
+      description:
+        'Guess, drag, and flex your anime IQ! Complete legendary anime quotes, guess the speaker, or match the mood — all in one word-tile challenge! Test your knowledge of Naruto, One Piece, JJK, and more, then climb the global leaderboard.',
+      heading: 'Anime Pixel Quest 🎌',
+      appIconUri: 'app-icon.png',
     },
     postData: {
       gameType: 'anime-puzzle',
       totalPuzzles: 10,
-      difficulty: 'mixed'
+      difficulty: 'mixed',
     },
     subredditName: subredditName,
-    title: '🎌 Anime Line - Complete the Quote! | Word Puzzle Game',
+    title: '🎌 Anime Pixel Quest - Guess, Drag & Flex Your Anime IQ! 🥢',
   });
 };

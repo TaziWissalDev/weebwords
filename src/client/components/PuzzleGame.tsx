@@ -18,6 +18,7 @@ import { AnimeBackground } from './AnimeBackground';
 import { FeedbackService } from '../services/feedbackService';
 import { CompletionCelebration } from './CompletionCelebration';
 import { Timer } from './Timer';
+import { useSound } from '../hooks/useSound';
 
 interface PuzzleGameProps {
   initialPuzzle: GamePuzzle | null;
@@ -69,6 +70,12 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
   // Get theme classes for the selected anime
   const themeClasses = getThemeClasses(selectedAnime);
   const isMobile = useIsMobile();
+  const { sounds, resumeAudio } = useSound();
+
+  // Resume audio context on component mount
+  useEffect(() => {
+    resumeAudio();
+  }, [resumeAudio]);
 
   useEffect(() => {
     if (initialPuzzle) {
@@ -198,6 +205,12 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
               ? 200
               : 300;
 
+        // Play success sounds
+        sounds.correct();
+        setTimeout(() => {
+          sounds.success();
+        }, 300);
+
         const characterFeedback = FeedbackService.getFeedback(
           puzzleState.currentPuzzle.character,
           score,
@@ -211,6 +224,9 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
         if (score >= maxScore * 0.7) {
           setCelebrationData({ character: puzzleState.currentPuzzle.character, score });
           setShowCelebration(true);
+          setTimeout(() => {
+            sounds.celebration();
+          }, 500);
         }
 
         onPuzzleComplete(score, puzzleState.hintsUsed);
@@ -236,6 +252,12 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
           setShowHints(false);
         }, 2500);
       } else {
+        // Play failure sounds
+        sounds.wrong();
+        setTimeout(() => {
+          sounds.failure();
+        }, 400);
+
         const wrongFeedback = FeedbackService.getWrongAnswerFeedback(
           puzzleState.currentPuzzle.character
         );
@@ -253,6 +275,7 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
   };
 
   const handleUseHint = () => {
+    sounds.hint();
     setShowHints(true);
     setPuzzleState((prev) => {
       const newHintsUsed = prev.hintsUsed + 1;
@@ -451,7 +474,10 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <button
-                      onClick={onBackToDifficulty}
+                      onClick={() => {
+                        sounds.button();
+                        onBackToDifficulty();
+                      }}
                       className="neon-button flex items-center space-x-2"
                     >
                       <span>←</span>
@@ -459,7 +485,10 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
                     </button>
 
                     <button
-                      onClick={onShowBadges}
+                      onClick={() => {
+                        sounds.button();
+                        onShowBadges();
+                      }}
                       className="pixel-button flex items-center space-x-2"
                     >
                       <span>🏆</span>
@@ -548,7 +577,10 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
               </button>
 
               <button
-                onClick={handleSubmitSolution}
+                onClick={() => {
+                  sounds.enter();
+                  handleSubmitSolution();
+                }}
                 disabled={isSubmitting || puzzleState.isCompleted}
                 className="anime-button disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -563,14 +595,20 @@ export const PuzzleGame: React.FC<PuzzleGameProps> = ({
               </button>
 
               <button
-                onClick={handleNewPuzzle}
+                onClick={() => {
+                  sounds.newQuiz();
+                  handleNewPuzzle();
+                }}
                 className="neon-button"
               >
                 🎲 NEW PUZZLE
               </button>
 
               <button
-                onClick={() => setShowLeaderboard(true)}
+                onClick={() => {
+                  sounds.button();
+                  setShowLeaderboard(true);
+                }}
                 className="pixel-button"
                 style={{ background: 'linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%)' }}
               >

@@ -6,7 +6,7 @@ type Difficulty = 'easy' | 'medium' | 'hard';
 export class AIPuzzleService {
   private static readonly CACHE_DURATION = 24 * 60 * 60; // 24 hours in seconds
   
-  static async generateDailyPuzzles(date: string = new Date().toISOString().split('T')[0]) {
+  static async generateDailyPuzzles(date: string = new Date().toISOString().split('T')[0]!) {
     const cacheKey = `daily_puzzles:${date}`;
     const cached = await redis.get(cacheKey);
     
@@ -39,7 +39,7 @@ export class AIPuzzleService {
       };
 
       // Cache for 24 hours
-      await redis.setex(cacheKey, this.CACHE_DURATION, JSON.stringify(dailyPuzzles));
+      await redis.set(cacheKey, JSON.stringify(dailyPuzzles), { expiration: new Date(Date.now() + this.CACHE_DURATION * 1000) });
       
       console.log(`🎉 Generated ${puzzles.length} total puzzles for ${date}`);
       return dailyPuzzles;

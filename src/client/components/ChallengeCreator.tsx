@@ -1,6 +1,19 @@
 import React, { useState } from 'react';
 import { GamePuzzle, PuzzleChallenge } from '../../shared/types/puzzle';
 import { MockDataService } from '../services/mockData';
+import { useSound } from '../hooks/useSound';
+import { getQuestionsForChallenge, getAvailableAnimes, getQuestionCount } from '../data/challengeQuestions';
+
+interface CustomQuestion {
+  id: string;
+  question: string;
+  correctAnswer: string;
+  wrongAnswers: string[];
+  anime: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  isValidated?: boolean;
+  validationError?: string;
+}
 
 interface ChallengeCreatorProps {
   onChallengeCreated: (challenge: PuzzleChallenge) => void;
@@ -16,18 +29,135 @@ export const ChallengeCreator: React.FC<ChallengeCreatorProps> = ({
   const [selectedAnime, setSelectedAnime] = useState('Mixed');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('mixed');
   const [timeLimit, setTimeLimit] = useState(300); // 5 minutes default
-  const [puzzleCount, setPuzzleCount] = useState(5);
+  const [puzzleCount, setPuzzleCount] = useState(8);
   const [isPublic, setIsPublic] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [challengeType, setChallengeType] = useState<'auto' | 'custom' | 'multi-question'>('auto');
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
+  const [currentQuestion, setCurrentQuestion] = useState<CustomQuestion>({
+    id: '',
+    question: '',
+    correctAnswer: '',
+    wrongAnswers: ['', '', ''],
+    anime: '',
+    difficulty: 'medium',
+    isValidated: false
+  });
+  const [isValidating, setIsValidating] = useState(false);
+  const [multiQuestionTitle, setMultiQuestionTitle] = useState('');
+  const [multiQuestionTimeLimit, setMultiQuestionTimeLimit] = useState(30); // seconds per question
+  
+  const { sounds } = useSound();
 
   const animeOptions = [
     'Mixed', 'Naruto', 'One Piece', 'Attack on Titan', 'Demon Slayer', 
     'Jujutsu Kaisen', 'My Hero Academia', 'Death Note', 'Dragon Ball'
   ];
 
+  const validateQuestion = async (question: CustomQuestion) => {
+    setIsValidating(true);
+    try {
+      const response = await fetch('/api/challenges/validate-question', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          question: question.question,
+          correctAnswer: question.correctAnswer,
+          wrongAnswers: question.wrongAnswers,
+          anime: question.anime
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.isValid) {
+        sounds.success();
+        return { isValid: true, error: null };
+      } else {
+        sounds.wrong();
+        return { isValid: false, error: result.error || 'Question validation failed' };
+      }
+    } catch (error) {
+      console.error('Error validating question:', error);
+      sounds.wrong();
+      return { isValid: false, error: 'Failed to validate question. Please try again.' };
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const addCustomQuestion = async () => {
+    // Validate required fields
+    if (!currentQuestion.question.trim()) {
+      alert('Please enter a question!');
+      return;
+    }
+    if (!currentQuestion.correctAnswer.trim()) {
+      alert('Please enter the correct answer!');
+      return;
+    }
+    if (currentQuestion.wrongAnswers.some(answer => !answer.trim())) {
+      alert('Please fill in all wrong answers!');
+      return;
+    }
+    if (!currentQuestion.anime.trim()) {
+      alert('Please specify which anime this question is about!');
+      return;
+    }
+
+    // Validate with AI
+    const validation = await validateQuestion(currentQuestion);
+    
+    if (!validation.isValid) {
+      alert(`Question validation failed: ${validation.error}`);
+      return;
+    }
+
+    // Add question to list
+    const newQuestion: CustomQuestion = {
+      ...currentQuestion,
+      id: `question_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      isValidated: true
+    };
+
+    setCustomQuestions(prev => [...prev, newQuestion]);
+    
+    // Reset form
+    setCurrentQuestion({
+      id: '',
+      question: '',
+      correctAnswer: '',
+      wrongAnswers: ['', '', ''],
+      anime: '',
+      difficulty: 'medium',
+      isValidated: false
+    });
+
+    sounds.success();
+  };
+
+  const removeCustomQuestion = (questionId: string) => {
+    setCustomQuestions(prev => prev.filter(q => q.id !== questionId));
+    sounds.click();
+  };
+
   const handleCreateChallenge = async () => {
     if (!title.trim()) {
       alert('Please enter a challenge title!');
+      return;
+    }
+
+    // Check if we have questions available for the selected anime/difficulty
+    const availableQuestions = getQuestionCount(selectedAnime, difficulty as 'easy' | 'medium' | 'hard');
+    if (availableQuestions === 0) {
+      alert(`No questions available for ${selectedAnime} ${difficulty} difficulty. Please choose a different combination.`);
+      return;
+    }
+
+    if (challengeType === 'multi-question' && !multiQuestionTitle.trim()) {
+      alert('Please enter a title for your multi-question puzzle!');
       return;
     }
 
@@ -36,10 +166,60 @@ export const ChallengeCreator: React.FC<ChallengeCreatorProps> = ({
     try {
       // Generate puzzles for the challenge
       const puzzles: GamePuzzle[] = [];
-      for (let i = 0; i < puzzleCount; i++) {
-        const difficultyForPuzzle = difficulty === 'mixed' ? undefined : difficulty;
-        const puzzle = MockDataService.getRandomPuzzle(difficultyForPuzzle, selectedAnime);
-        puzzles.push(puzzle);
+      
+      if (challengeType === 'auto') {
+        // Auto-generate puzzles using our question database - use multi-question format
+        // Leave puzzles array empty for auto challenges, use multiQuestionPuzzles instead
+      } else if (challengeType === 'custom') {
+        // Use custom questions as separate puzzles
+        customQuestions.forEach(question => {
+          const customPuzzle: GamePuzzle = {
+            type: 'custom-question',
+            customQuestion: {
+              id: question.id,
+              question: question.question,
+              correctAnswer: question.correctAnswer,
+              options: [question.correctAnswer, ...question.wrongAnswers].sort(() => Math.random() - 0.5),
+              anime: question.anime,
+              difficulty: question.difficulty,
+              hints: {
+                hint1: `This question is about ${question.anime}`,
+                hint2: 'Think about the characters and story elements',
+                hint3: 'Consider the specific details mentioned in the question'
+              }
+            }
+          };
+          puzzles.push(customPuzzle);
+        });
+      }
+
+      // Handle multi-question puzzles
+      let multiQuestionPuzzles: any[] = [];
+      if (challengeType === 'multi-question' || challengeType === 'auto') {
+        // Auto-generate questions for multi-question puzzle
+        const questionsToGenerate = Math.min(8, getQuestionCount(selectedAnime, difficulty as 'easy' | 'medium' | 'hard'));
+        const questions = getQuestionsForChallenge(selectedAnime, difficulty as 'easy' | 'medium' | 'hard', questionsToGenerate);
+        
+        const multiQuestionPuzzle = {
+          id: `multi_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+          title: challengeType === 'multi-question' 
+            ? (multiQuestionTitle.trim() || `${selectedAnime} ${difficulty.toUpperCase()} Challenge`)
+            : `${selectedAnime} ${difficulty.toUpperCase()} Challenge`,
+          questions: questions.map(question => ({
+            id: question.id,
+            question: question.question,
+            correctAnswer: question.correctAnswer,
+            options: [question.correctAnswer, ...question.wrongAnswers].sort(() => Math.random() - 0.5),
+            anime: question.anime,
+            difficulty: question.difficulty,
+            hints: question.hints
+          })),
+          timeLimit: multiQuestionTimeLimit,
+          anime: selectedAnime,
+          difficulty,
+          totalScore: questions.length * 100 // 100 points per question
+        };
+        multiQuestionPuzzles.push(multiQuestionPuzzle);
       }
 
       // Create challenge object
@@ -50,6 +230,7 @@ export const ChallengeCreator: React.FC<ChallengeCreatorProps> = ({
         title: title.trim(),
         description: description.trim() || `A ${difficulty} challenge featuring ${selectedAnime} puzzles!`,
         puzzles,
+        multiQuestionPuzzles: multiQuestionPuzzles.length > 0 ? multiQuestionPuzzles : undefined,
         timeLimit,
         difficulty,
         anime: selectedAnime,
@@ -58,6 +239,14 @@ export const ChallengeCreator: React.FC<ChallengeCreatorProps> = ({
         completions: [],
         maxAttempts: 3
       };
+
+      // Debug logging
+      console.log('🎯 Creating challenge:', {
+        challengeType,
+        puzzlesCount: puzzles.length,
+        multiQuestionPuzzlesCount: multiQuestionPuzzles.length,
+        challenge
+      });
 
       // Submit to server
       const response = await fetch('/api/challenges/create', {
@@ -132,6 +321,444 @@ export const ChallengeCreator: React.FC<ChallengeCreatorProps> = ({
                 maxLength={200}
               />
             </div>
+
+            {/* Challenge Type Selection */}
+            <div className="neon-card p-4">
+              <label className="anime-text-pixel text-cyan-400 text-sm mb-3 block">
+                CHALLENGE TYPE
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  onClick={() => {
+                    sounds.click();
+                    setChallengeType('auto');
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    challengeType === 'auto'
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                      : 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600/50'
+                  }`}
+                >
+                  <div className="text-2xl mb-2">🎲</div>
+                  <div className="anime-text-pixel text-sm">AUTO-GENERATED</div>
+                  <div className="text-xs text-gray-400 mt-1">Use existing puzzles</div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    sounds.click();
+                    setChallengeType('custom');
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    challengeType === 'custom'
+                      ? 'bg-purple-500/20 border-purple-400 text-purple-300'
+                      : 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600/50'
+                  }`}
+                >
+                  <div className="text-2xl mb-2">✍️</div>
+                  <div className="anime-text-pixel text-sm">CUSTOM QUESTIONS</div>
+                  <div className="text-xs text-gray-400 mt-1">Write your own</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    sounds.click();
+                    setChallengeType('multi-question');
+                  }}
+                  className={`p-4 rounded-lg border-2 transition-all ${
+                    challengeType === 'multi-question'
+                      ? 'bg-green-500/20 border-green-400 text-green-300'
+                      : 'bg-gray-700/50 border-gray-600 text-white hover:bg-gray-600/50'
+                  }`}
+                >
+                  <div className="text-2xl mb-2">📝</div>
+                  <div className="anime-text-pixel text-sm">MULTI-QUESTION</div>
+                  <div className="text-xs text-gray-400 mt-1">Multiple questions in one puzzle</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Questions Section */}
+            {challengeType === 'custom' && (
+              <div className="neon-card p-4">
+                <h3 className="anime-text-pixel text-purple-400 text-lg mb-4">✍️ CREATE CUSTOM QUESTIONS</h3>
+                
+                {/* Current Question Form */}
+                <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                  <h4 className="anime-text-pixel text-white text-sm mb-3">ADD NEW QUESTION</h4>
+                  
+                  {/* Question Input */}
+                  <div className="mb-4">
+                    <label className="anime-text-pixel text-cyan-400 text-xs mb-2 block">
+                      QUESTION *
+                    </label>
+                    <textarea
+                      value={currentQuestion.question}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, question: e.target.value }))}
+                      placeholder="What is the name of Naruto's signature jutsu?"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-cyan-400 focus:outline-none resize-none"
+                      rows={2}
+                      maxLength={200}
+                    />
+                  </div>
+
+                  {/* Correct Answer */}
+                  <div className="mb-4">
+                    <label className="anime-text-pixel text-green-400 text-xs mb-2 block">
+                      CORRECT ANSWER *
+                    </label>
+                    <input
+                      type="text"
+                      value={currentQuestion.correctAnswer}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, correctAnswer: e.target.value }))}
+                      placeholder="Shadow Clone Jutsu"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-green-400 focus:outline-none"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  {/* Wrong Answers */}
+                  <div className="mb-4">
+                    <label className="anime-text-pixel text-red-400 text-xs mb-2 block">
+                      WRONG ANSWERS * (3 required)
+                    </label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {currentQuestion.wrongAnswers.map((answer, index) => (
+                        <input
+                          key={index}
+                          type="text"
+                          value={answer}
+                          onChange={(e) => {
+                            const newWrongAnswers = [...currentQuestion.wrongAnswers];
+                            newWrongAnswers[index] = e.target.value;
+                            setCurrentQuestion(prev => ({ ...prev, wrongAnswers: newWrongAnswers }));
+                          }}
+                          placeholder={`Wrong answer ${index + 1}`}
+                          className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-red-400 focus:outline-none"
+                          maxLength={100}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question Settings */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="anime-text-pixel text-yellow-400 text-xs mb-2 block">
+                        ANIME SERIES *
+                      </label>
+                      <input
+                        type="text"
+                        value={currentQuestion.anime}
+                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, anime: e.target.value }))}
+                        placeholder="Naruto"
+                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-yellow-400 focus:outline-none"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <label className="anime-text-pixel text-purple-400 text-xs mb-2 block">
+                        DIFFICULTY
+                      </label>
+                      <select
+                        value={currentQuestion.difficulty}
+                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-purple-400 focus:outline-none"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Add Question Button */}
+                  <div className="text-center">
+                    <button
+                      onClick={addCustomQuestion}
+                      disabled={isValidating}
+                      className="pixel-button px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ 
+                        background: 'linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%)'
+                      }}
+                    >
+                      {isValidating ? (
+                        <span className="flex items-center space-x-2">
+                          <div className="anime-loading w-4 h-4"></div>
+                          <span>🤖 AI VALIDATING...</span>
+                        </span>
+                      ) : (
+                        '✅ ADD QUESTION'
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Added Questions List */}
+                {customQuestions.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="anime-text-pixel text-white text-sm mb-3">
+                      📝 ADDED QUESTIONS ({customQuestions.length})
+                    </h4>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {customQuestions.map((question, index) => (
+                        <div key={question.id} className="bg-gray-800/30 rounded-lg p-3 border border-gray-600">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="text-white text-sm font-bold mb-1">
+                                Q{index + 1}: {question.question}
+                              </div>
+                              <div className="text-green-400 text-xs mb-1">
+                                ✅ {question.correctAnswer}
+                              </div>
+                              <div className="text-red-400 text-xs">
+                                ❌ {question.wrongAnswers.join(', ')}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeCustomQuestion(question.id)}
+                              className="text-red-400 hover:text-red-300 transition-colors ml-2"
+                              title="Remove question"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                          <div className="flex items-center space-x-4 text-xs">
+                            <span className="anime-text-pixel text-yellow-400">
+                              📺 {question.anime}
+                            </span>
+                            <span className={`anime-text-pixel ${
+                              question.difficulty === 'easy' ? 'text-green-400' :
+                              question.difficulty === 'medium' ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              ⚡ {question.difficulty.toUpperCase()}
+                            </span>
+                            {question.isValidated && (
+                              <span className="text-green-400">✅ AI Validated</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Multi-Question Section */}
+            {challengeType === 'multi-question' && (
+              <div className="neon-card p-4">
+                <h3 className="anime-text-pixel text-green-400 text-lg mb-4">📝 CREATE MULTI-QUESTION PUZZLE</h3>
+                
+                {/* Multi-Question Settings */}
+                <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                  <h4 className="anime-text-pixel text-white text-sm mb-3">PUZZLE SETTINGS</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="anime-text-pixel text-cyan-400 text-xs mb-2 block">
+                        PUZZLE TITLE *
+                      </label>
+                      <input
+                        type="text"
+                        value={multiQuestionTitle}
+                        onChange={(e) => setMultiQuestionTitle(e.target.value)}
+                        placeholder="Ultimate Naruto Knowledge Test"
+                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-cyan-400 focus:outline-none"
+                        maxLength={100}
+                      />
+                    </div>
+                    <div>
+                      <label className="anime-text-pixel text-yellow-400 text-xs mb-2 block">
+                        TIME PER QUESTION (SECONDS)
+                      </label>
+                      <input
+                        type="number"
+                        value={multiQuestionTimeLimit}
+                        onChange={(e) => setMultiQuestionTimeLimit(Math.max(10, Math.min(120, parseInt(e.target.value) || 30)))}
+                        min="10"
+                        max="120"
+                        className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-yellow-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Question Form - Same as custom questions */}
+                <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+                  <h4 className="anime-text-pixel text-white text-sm mb-3">ADD QUESTIONS TO PUZZLE</h4>
+                  
+                  {/* Question Input */}
+                  <div className="mb-4">
+                    <label className="anime-text-pixel text-cyan-400 text-xs mb-2 block">
+                      QUESTION *
+                    </label>
+                    <textarea
+                      value={currentQuestion.question}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, question: e.target.value }))}
+                      placeholder="What is the name of Naruto's signature jutsu?"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-cyan-400 focus:outline-none resize-none"
+                      rows={2}
+                      maxLength={200}
+                    />
+                  </div>
+
+                  {/* Correct Answer */}
+                  <div className="mb-4">
+                    <label className="anime-text-pixel text-green-400 text-xs mb-2 block">
+                      CORRECT ANSWER *
+                    </label>
+                    <input
+                      type="text"
+                      value={currentQuestion.correctAnswer}
+                      onChange={(e) => setCurrentQuestion(prev => ({ ...prev, correctAnswer: e.target.value }))}
+                      placeholder="Shadow Clone Jutsu"
+                      className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-green-400 focus:outline-none"
+                      maxLength={100}
+                    />
+                  </div>
+
+                  {/* Wrong Answers */}
+                  <div className="mb-4">
+                    <label className="anime-text-pixel text-red-400 text-xs mb-2 block">
+                      WRONG ANSWERS * (3 required)
+                    </label>
+                    <div className="grid grid-cols-1 gap-2">
+                      {currentQuestion.wrongAnswers.map((answer, index) => (
+                        <input
+                          key={index}
+                          type="text"
+                          value={answer}
+                          onChange={(e) => {
+                            const newWrongAnswers = [...currentQuestion.wrongAnswers];
+                            newWrongAnswers[index] = e.target.value;
+                            setCurrentQuestion(prev => ({ ...prev, wrongAnswers: newWrongAnswers }));
+                          }}
+                          placeholder={`Wrong answer ${index + 1}`}
+                          className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-red-400 focus:outline-none"
+                          maxLength={100}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Question Settings */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="anime-text-pixel text-yellow-400 text-xs mb-2 block">
+                        ANIME SERIES *
+                      </label>
+                      <input
+                        type="text"
+                        value={currentQuestion.anime}
+                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, anime: e.target.value }))}
+                        placeholder="Naruto"
+                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-yellow-400 focus:outline-none"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <label className="anime-text-pixel text-purple-400 text-xs mb-2 block">
+                        DIFFICULTY
+                      </label>
+                      <select
+                        value={currentQuestion.difficulty}
+                        onChange={(e) => setCurrentQuestion(prev => ({ ...prev, difficulty: e.target.value as any }))}
+                        className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:border-purple-400 focus:outline-none"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Add Question Button */}
+                  <div className="text-center">
+                    <button
+                      onClick={addCustomQuestion}
+                      disabled={isValidating}
+                      className="pixel-button px-6 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{ 
+                        background: 'linear-gradient(135deg, var(--neon-green) 0%, var(--neon-cyan) 100%)'
+                      }}
+                    >
+                      {isValidating ? (
+                        <span className="flex items-center space-x-2">
+                          <div className="anime-loading w-4 h-4"></div>
+                          <span>🤖 AI VALIDATING...</span>
+                        </span>
+                      ) : (
+                        '✅ ADD TO PUZZLE'
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Added Questions List */}
+                {customQuestions.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="anime-text-pixel text-white text-sm mb-3">
+                      📝 QUESTIONS IN PUZZLE ({customQuestions.length})
+                    </h4>
+                    <div className="space-y-3 max-h-60 overflow-y-auto">
+                      {customQuestions.map((question, index) => (
+                        <div key={question.id} className="bg-gray-800/30 rounded-lg p-3 border border-gray-600">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="text-white text-sm font-bold mb-1">
+                                Q{index + 1}: {question.question}
+                              </div>
+                              <div className="text-green-400 text-xs mb-1">
+                                ✅ {question.correctAnswer}
+                              </div>
+                              <div className="text-red-400 text-xs">
+                                ❌ {question.wrongAnswers.join(', ')}
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeCustomQuestion(question.id)}
+                              className="text-red-400 hover:text-red-300 transition-colors ml-2"
+                              title="Remove question"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                          <div className="flex items-center space-x-4 text-xs">
+                            <span className="anime-text-pixel text-yellow-400">
+                              📺 {question.anime}
+                            </span>
+                            <span className={`anime-text-pixel ${
+                              question.difficulty === 'easy' ? 'text-green-400' :
+                              question.difficulty === 'medium' ? 'text-yellow-400' : 'text-red-400'
+                            }`}>
+                              ⚡ {question.difficulty.toUpperCase()}
+                            </span>
+                            {question.isValidated && (
+                              <span className="text-green-400">✅ AI Validated</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Multi-Question Info */}
+                <div className="bg-blue-900/20 border border-blue-400/50 rounded-lg p-4">
+                  <div className="flex items-start space-x-3">
+                    <div className="text-2xl">💡</div>
+                    <div>
+                      <h4 className="anime-text-pixel text-blue-400 text-sm font-bold mb-2">MULTI-QUESTION PUZZLE</h4>
+                      <p className="text-xs text-gray-300 leading-relaxed">
+                        All questions will be grouped into a single puzzle that players complete sequentially. 
+                        Each question has its own timer ({multiQuestionTimeLimit}s), and the total score is the sum of all correct answers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Settings Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

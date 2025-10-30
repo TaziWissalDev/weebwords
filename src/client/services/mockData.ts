@@ -1,4 +1,5 @@
 import { GamePuzzle, GameStats, AnimePuzzle, CharacterQuiz } from '../../shared/types/puzzle';
+import { CHARACTER_QUIZ_DATABASE, getRandomCharacterQuiz, getCharacterQuizCount } from '../data/characterQuizDatabase';
 import { PuzzleTracker } from './puzzleTracker';
 import { ALL_COMPREHENSIVE_PUZZLES_FINAL } from './comprehensivePuzzles';
 
@@ -396,7 +397,8 @@ export class MockDataService {
         }
       };
     } else {
-      let filteredQuizzes = MOCK_CHARACTER_QUIZZES;
+      // Use new comprehensive character quiz database (110 per difficulty)
+      let filteredQuizzes = CHARACTER_QUIZ_DATABASE;
       
       // Filter by difficulty
       if (difficulty) {
@@ -421,20 +423,20 @@ export class MockDataService {
         
         // First fallback: try just anime filter (ignore difficulty)
         if (anime && anime !== 'Mixed') {
-          filteredQuizzes = MOCK_CHARACTER_QUIZZES.filter(q => q.anime === anime);
+          filteredQuizzes = CHARACTER_QUIZ_DATABASE.filter(q => q.anime === anime);
           console.log('🔄 Fallback 1: Found character quizzes for anime only:', filteredQuizzes.length);
         }
         
         // Second fallback: try just difficulty filter (ignore anime)
         if (filteredQuizzes.length === 0 && difficulty) {
-          filteredQuizzes = MOCK_CHARACTER_QUIZZES.filter(q => q.difficulty === difficulty);
+          filteredQuizzes = CHARACTER_QUIZ_DATABASE.filter(q => q.difficulty === difficulty);
           console.log('🔄 Fallback 2: Found character quizzes for difficulty only:', filteredQuizzes.length);
         }
         
         // Final fallback: all character quizzes
         if (filteredQuizzes.length === 0) {
           console.log('🔄 Final fallback: Using all character quizzes');
-          filteredQuizzes = MOCK_CHARACTER_QUIZZES;
+          filteredQuizzes = CHARACTER_QUIZ_DATABASE;
         }
       }
       
@@ -444,7 +446,8 @@ export class MockDataService {
       // Mark this quiz as used
       PuzzleTracker.markPuzzleAsUsed(quiz.id);
       
-      console.log('✅ Selected character quiz:', `${quiz.anime} - ${quiz.character}`);
+      console.log('✅ Selected character quiz:', `${quiz.anime} - ${quiz.character} (${quiz.difficulty})`);
+      console.log('📊 Available quizzes for this filter:', filteredQuizzes.length);
       console.log('📊 Used puzzles count:', PuzzleTracker.getUsedCount());
       
       return {

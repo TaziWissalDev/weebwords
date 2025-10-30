@@ -30,8 +30,8 @@ export class DailyPuzzleManager {
       throw new Error('No AI API keys configured for puzzle generation');
     }
 
-    // Start automatic puzzle generation scheduler
-    this.initializeScheduler();
+    // Note: Scheduler initialization is now manual to avoid Redis context issues
+    // Call initializeScheduler() manually within request contexts if needed
   }
 
   async getTodaysPuzzles(): Promise<DailyPuzzleCollection> {
@@ -50,7 +50,7 @@ export class DailyPuzzleManager {
     const puzzleCollection = await this.generateDailyPuzzles(today);
 
     // Cache for 24 hours
-    await redis.setex(cacheKey, 86400, JSON.stringify(puzzleCollection));
+    await redis.set(cacheKey, JSON.stringify(puzzleCollection), { expiration: new Date(Date.now() + 86400 * 1000) });
     console.log('💾 Cached daily puzzles for 24 hours');
 
     return puzzleCollection;
@@ -314,7 +314,7 @@ export class DailyPuzzleManager {
 
       // Update cache
       const cacheKey = `daily_puzzles:${currentData.date}`;
-      await redis.setex(cacheKey, 86400, JSON.stringify(updatedData));
+      await redis.set(cacheKey, JSON.stringify(updatedData), { expiration: new Date(Date.now() + 86400 * 1000) });
       
       console.log(`✅ Generated ${additionalPuzzles} additional puzzles. Total: ${updatedData.totalPuzzles}`);
     } catch (error) {
@@ -349,7 +349,7 @@ export class DailyPuzzleManager {
       
       usage[trackingKey] = (usage[trackingKey] || 0) + 1;
       
-      await redis.setex(usageKey, 86400, JSON.stringify(usage));
+      await redis.set(usageKey, JSON.stringify(usage), { expiration: new Date(Date.now() + 86400 * 1000) });
       
       console.log(`📊 Tracked puzzle usage: ${trackingKey} = ${usage[trackingKey]}`);
     } catch (error) {

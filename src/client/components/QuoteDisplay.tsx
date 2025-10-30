@@ -36,15 +36,12 @@ export const QuoteDisplay: React.FC<QuoteDisplayProps> = ({
     const elements: React.ReactNode[] = [];
     
     parts.forEach((part, index) => {
-      // Add the text part with potential blur effect
+      // Add the text part (no blur effect)
       if (part) {
-        const shouldBlur = !showHints && hintsUsed === 0 && part.trim().length > 3;
         elements.push(
           <span 
             key={`text-${index}`} 
-            className={`transition-all duration-500 ${
-              shouldBlur ? 'blur-sm opacity-60' : 'blur-none opacity-100'
-            }`}
+            className="transition-all duration-500 blur-none opacity-100"
           >
             {part}
           </span>
@@ -115,18 +112,11 @@ export const QuoteDisplay: React.FC<QuoteDisplayProps> = ({
         {/* Instructions */}
         <div className="text-center">
           <p className="anime-text-pixel text-xs text-gray-400">
-            {hintsUsed > 0 ? 'HINTS REVEALED SOME WORDS!' : 'DRAG TILES TO BLANKS • TAP TO SELECT ON MOBILE'}
+            DRAG TILES TO BLANKS • TAP TO SELECT ON MOBILE
           </p>
         </div>
         
-        {/* Hidden Message Indicator */}
-        {!showHints && hintsUsed === 0 && (
-          <div className="mt-2 text-center">
-            <p className="anime-text-pixel text-xs text-yellow-400 animate-pulse">
-              💡 USE HINTS TO REVEAL HIDDEN CLUES
-            </p>
-          </div>
-        )}
+
       </div>
     </div>
   );

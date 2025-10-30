@@ -211,7 +211,7 @@ export class AIPuzzleGenerator {
       const generatedData = await this.provider.generatePuzzles(prompt);
       
       return {
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0]!,
         anime,
         difficulty,
         wordPuzzles: this.processWordPuzzles(generatedData.wordPuzzles, anime, difficulty),

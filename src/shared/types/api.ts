@@ -1,4 +1,4 @@
-import { AnimePuzzle, PuzzleState, GameStats, GamePuzzle, CharacterQuiz } from './puzzle';
+import { GameStats, GamePuzzle } from './puzzle';
 import { LeaderboardResponse } from './leaderboard';
 
 export type InitResponse = {

@@ -1,13 +1,15 @@
-import Database from 'better-sqlite3';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+// SQLite not supported in Devvit serverless environment
+// import Database from 'better-sqlite3';
+// import { readFileSync } from 'fs';
+// import { join } from 'path';
 import { DailyPack, ScoreSubmission, LeaderboardEntry, PuzzleType } from '../../shared/types/daily-pack';
 
 export class DatabaseService {
-  private db: Database.Database;
+  // SQLite not supported in Devvit - using Redis instead
+  // private db: Database.Database;
 
   constructor(dbPath: string = ':memory:') {
-    this.db = new Database(dbPath);
+    // this.db = new Database(dbPath);
     this.initializeSchema();
   }
 

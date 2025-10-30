@@ -42,9 +42,24 @@ export interface CharacterQuiz {
 
 export type QuizType = 'word-puzzle' | 'character-guess';
 
+export interface CustomQuestion {
+  id: string;
+  question: string;
+  correctAnswer: string;
+  options: string[];
+  anime: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  hints: {
+    hint1: string;
+    hint2: string;
+    hint3: string;
+  };
+}
+
 export type GamePuzzle = 
   | { type: 'word-puzzle'; wordPuzzle: AnimePuzzle }
-  | { type: 'character-guess'; characterQuiz: CharacterQuiz };
+  | { type: 'character-guess'; characterQuiz: CharacterQuiz }
+  | { type: 'custom-question'; customQuestion: CustomQuestion };
 
 export interface PuzzleState {
   currentPuzzle: AnimePuzzle | null;
@@ -110,6 +125,16 @@ export interface AnimeTheme {
   };
 }
 
+export interface MultiQuestionPuzzle {
+  id: string;
+  title: string;
+  questions: CustomQuestion[];
+  timeLimit: number; // in seconds per question
+  anime: string;
+  difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
+  totalScore: number;
+}
+
 export interface PuzzleChallenge {
   id: string;
   createdBy: string;
@@ -117,6 +142,7 @@ export interface PuzzleChallenge {
   title: string;
   description: string;
   puzzles: GamePuzzle[];
+  multiQuestionPuzzles?: MultiQuestionPuzzle[]; // New field for multi-question support
   timeLimit: number; // in seconds
   difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
   anime: string;

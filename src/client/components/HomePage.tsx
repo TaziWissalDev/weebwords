@@ -4,11 +4,17 @@ import { getBadgeInfo } from '../utils/badgeUtils';
 import { LeaderboardModal } from './LeaderboardModal';
 import { Dashboard } from './Dashboard';
 import { ChallengeCreator } from './ChallengeCreator';
+import { SoundSettings } from './SoundSettings';
+import { ChallengeBrowser } from './ChallengeBrowser';
+import { ChallengePlayer } from './ChallengePlayer';
+import { ChallengeSuccessModal } from './ChallengeSuccessModal';
+import { useSound } from '../hooks/useSound';
 
 interface HomePageProps {
   username: string;
   onStartGame: () => void;
   onDailyChallenge: () => void;
+  onAnimeGuess?: () => void;
 }
 
 interface HomeStats {
@@ -64,7 +70,8 @@ interface UserProfile {
 export const HomePage: React.FC<HomePageProps> = ({
   username,
   onStartGame,
-  onDailyChallenge
+  onDailyChallenge,
+  onAnimeGuess
 }) => {
   const [homeStats, setHomeStats] = useState<HomeStats | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -73,6 +80,78 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showDashboard, setShowDashboard] = useState(false);
   const [showChallengeCreator, setShowChallengeCreator] = useState(false);
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
+  const [showChallengeBrowser, setShowChallengeBrowser] = useState(false);
+  const [currentChallenge, setCurrentChallenge] = useState<any>(null);
+  const [playingChallenge, setPlayingChallenge] = useState(false);
+  const [showChallengeSuccess, setShowChallengeSuccess] = useState(false);
+  const [createdChallenge, setCreatedChallenge] = useState<any>(null);
+  
+  const { sounds, resumeAudio } = useSound();
+
+  // Resume audio context on component mount
+  useEffect(() => {
+    resumeAudio();
+  }, [resumeAudio]);
+
+  const handlePlayChallenge = (challenge: any) => {
+    console.log('🎮 Starting challenge:', challenge);
+    console.log('🧩 Challenge has puzzles:', challenge.puzzles?.length || 0);
+    setCurrentChallenge(challenge);
+    setShowChallengeBrowser(false);
+    setPlayingChallenge(true);
+  };
+
+  const handleChallengeComplete = async (score: number, results: any[], timeUsed: number = 0) => {
+    try {
+      // Submit challenge completion to server
+      const response = await fetch(`/api/challenges/${currentChallenge.id}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          totalScore: score,
+          timeUsed: timeUsed,
+          hintsUsed: results.reduce((total: number, result: any) => total + (result.hintsUsed || 0), 0),
+          puzzleResults: results,
+        }),
+      });
+
+      if (response.ok) {
+        const completionData = await response.json();
+        console.log('🏆 Challenge completion recorded:', completionData);
+        
+        // Show badge notification if earned
+        if (completionData.badge && completionData.badgeLevel) {
+          const badgeEmojis = {
+            bronze: '🥉',
+            silver: '🥈', 
+            gold: '🥇',
+            platinum: '💎',
+            master: '👑'
+          };
+          
+          const badgeEmoji = badgeEmojis[completionData.badgeLevel as keyof typeof badgeEmojis] || '🏆';
+          
+          setTimeout(() => {
+            alert(`🎉 Challenge Complete!\n\n${badgeEmoji} Badge Earned: ${completionData.badgeLevel.toUpperCase()}\n🎯 Score: ${completionData.totalScore}\n📊 Accuracy: ${completionData.accuracy}%\n🏆 Leaderboard Rank: #${completionData.leaderboardRank}`);
+          }, 1000);
+        }
+      }
+    } catch (error) {
+      console.error('Error recording challenge completion:', error);
+    }
+
+    // Return to home
+    setPlayingChallenge(false);
+    setCurrentChallenge(null);
+  };
+
+  const handleExitChallenge = () => {
+    setPlayingChallenge(false);
+    setCurrentChallenge(null);
+  };
 
   useEffect(() => {
     fetchHomeData();
@@ -224,9 +303,12 @@ export const HomePage: React.FC<HomePageProps> = ({
         )}
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-2 sm:px-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 justify-center mb-6 sm:mb-8 px-2 sm:px-0">
           <button
-            onClick={onDailyChallenge}
+            onClick={() => {
+              sounds.button();
+              onDailyChallenge();
+            }}
             className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6 animate-purple-glow"
             style={{ 
               background: 'linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%)',
@@ -237,14 +319,35 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
           
           <button
-            onClick={onStartGame}
+            onClick={() => {
+              sounds.button();
+              onStartGame();
+            }}
             className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6 animate-neon-glow"
           >
             🔥 START ADVENTURE 🔥
           </button>
 
           <button
-            onClick={() => setShowLeaderboard(true)}
+            onClick={() => {
+              sounds.button();
+              onAnimeGuess && onAnimeGuess();
+            }}
+            className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-blue) 100%)',
+              color: '#fff',
+              fontWeight: 'bold'
+            }}
+          >
+            🎭 GUESS THE ANIME 🎭
+          </button>
+
+          <button
+            onClick={() => {
+              sounds.button();
+              setShowLeaderboard(true);
+            }}
             className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6 animate-gold-glow"
             style={{ 
               background: 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)',
@@ -257,7 +360,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
 
           <button
-            onClick={() => setShowChallengeCreator(true)}
+            onClick={() => {
+              sounds.button();
+              setShowChallengeCreator(true);
+            }}
             className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6"
             style={{ 
               background: 'linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-blue) 100%)',
@@ -269,7 +375,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
 
           <button
-            onClick={() => setShowDashboard(true)}
+            onClick={() => {
+              sounds.button();
+              setShowDashboard(true);
+            }}
             className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6"
             style={{ 
               background: 'linear-gradient(135deg, var(--neon-green) 0%, var(--neon-yellow) 100%)',
@@ -281,7 +390,10 @@ export const HomePage: React.FC<HomePageProps> = ({
           </button>
 
           <button
-            onClick={() => {/* TODO: Browse challenges */}}
+            onClick={() => {
+              sounds.button();
+              setShowChallengeBrowser(true);
+            }}
             className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6"
             style={{ 
               background: 'linear-gradient(135deg, var(--neon-orange) 0%, var(--neon-red) 100%)',
@@ -290,6 +402,21 @@ export const HomePage: React.FC<HomePageProps> = ({
             }}
           >
             🔍 BROWSE CHALLENGES 🔍
+          </button>
+
+          <button
+            onClick={() => {
+              sounds.button();
+              setShowSoundSettings(true);
+            }}
+            className="pixel-button text-sm sm:text-lg py-4 sm:py-6 px-4 sm:px-6"
+            style={{ 
+              background: 'linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-blue) 100%)',
+              color: '#fff',
+              fontWeight: 'bold'
+            }}
+          >
+            🔊 SOUND SETTINGS 🔊
           </button>
         </div>
 
@@ -518,10 +645,46 @@ export const HomePage: React.FC<HomePageProps> = ({
           <ChallengeCreator
             onChallengeCreated={(challenge) => {
               setShowChallengeCreator(false);
-              // TODO: Show success message or navigate to challenge
-              console.log('Challenge created:', challenge);
+              setCreatedChallenge(challenge);
+              setShowChallengeSuccess(true);
+              sounds.celebration();
             }}
             onClose={() => setShowChallengeCreator(false)}
+          />
+        )}
+        
+        <ChallengeSuccessModal
+          isOpen={showChallengeSuccess}
+          challenge={createdChallenge}
+          onClose={() => {
+            setShowChallengeSuccess(false);
+            setCreatedChallenge(null);
+          }}
+          onPlayChallenge={() => {
+            if (createdChallenge) {
+              handlePlayChallenge(createdChallenge);
+              setShowChallengeSuccess(false);
+            }
+          }}
+        />
+        
+        <SoundSettings
+          isOpen={showSoundSettings}
+          onClose={() => setShowSoundSettings(false)}
+        />
+        
+        {showChallengeBrowser && (
+          <ChallengeBrowser
+            onClose={() => setShowChallengeBrowser(false)}
+            onPlayChallenge={handlePlayChallenge}
+          />
+        )}
+        
+        {playingChallenge && currentChallenge && (
+          <ChallengePlayer
+            challenge={currentChallenge}
+            onComplete={handleChallengeComplete}
+            onExit={handleExitChallenge}
           />
         )}
       </div>

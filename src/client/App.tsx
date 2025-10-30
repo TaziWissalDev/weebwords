@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SplashScreen } from './components/SplashScreen';
 import { PixelSplashScreen } from './components/PixelSplashScreen';
+import { AnimePixelSplashScreen } from './components/AnimePixelSplashScreen';
 import { HomePage } from './components/HomePage';
 import { PuzzleGame } from './components/PuzzleGame';
 import { DifficultySelector } from './components/DifficultySelector';
@@ -8,25 +9,32 @@ import { AnimeSelector } from './components/AnimeSelector';
 import { GameOver } from './components/GameOver';
 import { BadgeSystem } from './components/BadgeSystem';
 import { DailyPackGame } from './components/DailyPackGame';
+import { AnimeGuess } from './components/AnimeGuess';
 import { GamePuzzle, GameStats } from '../shared/types/puzzle';
+import { AnimeGuessQuiz } from '../shared/types/animeGuess';
 import { MockDataService } from './services/mockData';
 import { LeaderboardModal } from './components/LeaderboardModal';
+import { useSound } from './hooks/useSound';
 
-type GameState = 'splash' | 'home' | 'difficulty' | 'animeSelection' | 'playing' | 'gameOver' | 'badges' | 'dailyPack';
+type GameState = 'splash' | 'home' | 'difficulty' | 'animeSelection' | 'playing' | 'gameOver' | 'badges' | 'dailyPack' | 'animeGuess';
 
 export const App = () => {
   const [gameState, setGameState] = useState<GameState>('splash');
   const [loading, setLoading] = useState(true);
   const [username, setUsername] = useState<string>('');
   const [currentPuzzle, setCurrentPuzzle] = useState<GamePuzzle | null>(null);
+  const [currentAnimeGuessQuiz, setCurrentAnimeGuessQuiz] = useState<AnimeGuessQuiz | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'medium' | 'hard' | 'mixed'>('mixed');
   const [selectedAnime, setSelectedAnime] = useState<string>('Mixed');
   const [gameStats, setGameStats] = useState<GameStats>(MockDataService.getInitialGameStats());
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  
+  const { sounds, resumeAudio } = useSound();
 
   useEffect(() => {
     initializeGame();
-  }, []);
+    resumeAudio();
+  }, [resumeAudio]);
 
   const initializeGame = async () => {
     try {
@@ -50,6 +58,23 @@ export const App = () => {
 
   const handleDailyPack = () => {
     setGameState('dailyPack');
+  };
+
+  const handleAnimeGuess = async () => {
+    try {
+      // Get a random anime guess quiz
+      const response = await fetch('/api/anime-guess/quiz');
+      const data = await response.json();
+      
+      if (data.status === 'success' && data.quiz) {
+        setCurrentAnimeGuessQuiz(data.quiz);
+        setGameState('animeGuess');
+      } else {
+        console.error('Failed to get anime guess quiz:', data.message);
+      }
+    } catch (error) {
+      console.error('Error fetching anime guess quiz:', error);
+    }
   };
 
   const handleGoToHome = () => {
@@ -110,6 +135,38 @@ export const App = () => {
         currentStreak: prev.currentStreak + 1,
         experience: prev.experience + score
       };
+      
+      // Update energy and check for resets
+      updatedStats = MockDataService.updateEnergyIfNeeded(updatedStats);
+      
+      // Check and unlock badges
+      updatedStats = MockDataService.checkAndUnlockBadges(updatedStats);
+      
+      return updatedStats;
+    });
+
+    // Generate next puzzle after a short delay
+    setTimeout(() => {
+      const difficultyForPuzzle = selectedDifficulty === 'mixed' ? undefined : selectedDifficulty;
+      const nextPuzzle = MockDataService.getRandomPuzzle(difficultyForPuzzle, selectedAnime);
+      setCurrentPuzzle(nextPuzzle);
+      console.log('🎮 Generated next puzzle:', nextPuzzle);
+    }, 2000); // 2 second delay to show completion feedback
+  };
+
+  const handleAnimeGuessComplete = (score: number, isCorrect: boolean) => {
+    setGameStats(prev => {
+      let updatedStats = {
+        ...prev,
+        totalPuzzlesSolved: prev.totalPuzzlesSolved + 1,
+        experience: prev.experience + score
+      };
+      
+      if (isCorrect) {
+        updatedStats.currentStreak = prev.currentStreak + 1;
+      } else {
+        updatedStats.currentStreak = 0;
+      }
       
       // Update energy and check for resets
       updatedStats = MockDataService.updateEnergyIfNeeded(updatedStats);
@@ -201,7 +258,7 @@ export const App = () => {
     case 'splash':
       return (
         <>
-          <PixelSplashScreen 
+          <AnimePixelSplashScreen 
             onPlay={handleGoToHome} 
             onDailyPack={handleDailyPack} 
             onShowLeaderboard={handleShowLeaderboard}
@@ -215,7 +272,7 @@ export const App = () => {
       );
     
     case 'home':
-      return <HomePage username={username} onStartGame={handleStartGame} onDailyChallenge={handleDailyPack} />;
+      return <HomePage username={username} onStartGame={handleStartGame} onDailyChallenge={handleDailyPack} onAnimeGuess={handleAnimeGuess} />;
     
     case 'difficulty':
       return (
@@ -282,6 +339,20 @@ export const App = () => {
     
     case 'dailyPack':
       return <DailyPackGame onBack={handleBackToMenu} />;
+    
+    case 'animeGuess':
+      return currentAnimeGuessQuiz ? (
+        <AnimeGuess
+          initialQuiz={currentAnimeGuessQuiz}
+          username={username}
+          gameStats={gameStats}
+          selectedDifficulty={selectedDifficulty}
+          onQuizComplete={handleAnimeGuessComplete}
+          onWrongAnswer={handleWrongAnswer}
+          onBackToDifficulty={handleBackToMenu}
+          onShowBadges={handleShowBadges}
+        />
+      ) : null;
     
     default:
       return null;

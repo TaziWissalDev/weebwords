@@ -28,6 +28,7 @@ import {
 } from './core/leaderboard';
 import { DatabaseService } from './services/databaseService';
 import { DailyPuzzleManager } from './services/dailyPuzzleManager';
+import { getRandomAnimeGuessQuiz, getAnimeGuessQuizById } from './data/animeGuessQuizzes';
 // import { DatabaseService } from './services/database';
 // import { PackGenerator } from './services/pack-generator';
 
@@ -848,16 +849,8 @@ router.get('/api/daily-challenge/leaderboard', async (req, res): Promise<void> =
 // Submit individual daily challenge puzzle score
 router.post('/api/daily-challenge/puzzle-score', async (req, res): Promise<void> => {
   try {
-    const {
-      puzzle_id,
-      puzzle_type,
-      anime,
-      character,
-      difficulty,
-      score,
-      hints_used,
-      is_correct,
-    } = req.body;
+    const { puzzle_id, puzzle_type, anime, character, difficulty, score, hints_used, is_correct } =
+      req.body;
     const username = await reddit.getCurrentUsername();
 
     if (!username) {
@@ -1204,7 +1197,9 @@ router.post('/api/daily-puzzles/expand', async (_req, res): Promise<void> => {
       });
     });
 
-    await redis.setex(usageKey, 86400, JSON.stringify(mockUsage));
+    await redis.set(usageKey, JSON.stringify(mockUsage), {
+      expiration: new Date(Date.now() + 86400 * 1000),
+    });
 
     // Trigger expansion check
     const updatedPuzzles = await dailyPuzzleManager.getTodaysPuzzles();
@@ -1220,6 +1215,180 @@ router.post('/api/daily-puzzles/expand', async (_req, res): Promise<void> => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to expand daily puzzles',
+    });
+  }
+});
+
+// Anime Guess Game Mode Endpoints
+
+// Get a random anime guess quiz
+router.get('/api/anime-guess/quiz', async (req, res): Promise<void> => {
+  try {
+    const { difficulty } = req.query;
+    const validDifficulty = ['easy', 'medium', 'hard'].includes(difficulty as string)
+      ? (difficulty as 'easy' | 'medium' | 'hard')
+      : undefined;
+
+    const quiz = getRandomAnimeGuessQuiz(validDifficulty);
+
+    res.json({
+      status: 'success',
+      quiz,
+    });
+  } catch (error) {
+    console.error('Error getting anime guess quiz:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get quiz',
+    });
+  }
+});
+
+// Submit anime guess answer
+router.post('/api/anime-guess/submit', async (req, res): Promise<void> => {
+  try {
+    const { quizId, selectedAnswer, hintsUsed, timeSpent } = req.body;
+    const username = await reddit.getCurrentUsername();
+
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    const quiz = getAnimeGuessQuizById(quizId);
+    if (!quiz) {
+      res.status(404).json({
+        status: 'error',
+        message: 'Quiz not found',
+      });
+      return;
+    }
+
+    const isCorrect = selectedAnswer === quiz.correctAnime;
+
+    // Calculate score based on difficulty, time, and hints used
+    let baseScore = 0;
+    switch (quiz.difficulty) {
+      case 'easy':
+        baseScore = 50;
+        break;
+      case 'medium':
+        baseScore = 100;
+        break;
+      case 'hard':
+        baseScore = 200;
+        break;
+    }
+
+    // Time bonus (faster = more points, max 60 seconds for full bonus)
+    const timeBonus = Math.max(0, 60 - Math.floor(timeSpent / 1000)) * 2;
+
+    // Hint penalty
+    const hintPenalty = hintsUsed * 25;
+
+    const finalScore = isCorrect ? Math.max(10, baseScore + timeBonus - hintPenalty) : 0;
+
+    // Update user stats if correct
+    if (isCorrect) {
+      // Update max score if this is a new record
+      const maxScoreResult = await DatabaseService.updateMaxScore(
+        username,
+        finalScore,
+        'anime-guess',
+        quiz.correctAnime,
+        quiz.difficulty
+      );
+
+      // Add puzzle score record
+      await DatabaseService.addPuzzleScore(username, {
+        puzzle_id: quizId,
+        puzzle_type: 'anime-guess',
+        anime: quiz.correctAnime,
+        character: quiz.character,
+        difficulty: quiz.difficulty,
+        score: finalScore,
+        max_possible_score: baseScore + 120, // Max possible with time bonus
+        hints_used: hintsUsed,
+        date: new Date().toISOString().split('T')[0],
+        is_new_max_record: maxScoreResult.isNewRecord,
+      });
+
+      // Update puzzle type leaderboard
+      await DatabaseService.updatePuzzleTypeLeaderboard(username, 'anime-guess', finalScore);
+
+      // Update global leaderboard
+      await DatabaseService.updateGlobalLeaderboard(username);
+
+      // Track daily stats
+      await DatabaseService.incrementDailyStats('puzzles_solved');
+      await DatabaseService.incrementDailyStats('total_score', finalScore);
+    }
+
+    // Generate feedback
+    let feedback = '';
+    if (isCorrect) {
+      if (finalScore >= 150) {
+        feedback = '🌟 PERFECT! Amazing anime knowledge!';
+      } else if (finalScore >= 100) {
+        feedback = '✨ EXCELLENT! Great job identifying the character!';
+      } else if (finalScore >= 50) {
+        feedback = '👍 GOOD! Well done!';
+      } else {
+        feedback = '✅ CORRECT! Nice work!';
+      }
+    } else {
+      feedback = `❌ Wrong! The correct answer was ${quiz.correctAnime}`;
+    }
+
+    res.json({
+      type: 'anime-guess-result',
+      isCorrect,
+      correctAnswer: quiz.correctAnime,
+      score: finalScore,
+      feedback,
+      characterInfo: {
+        name: quiz.character,
+        anime: quiz.correctAnime,
+        description: quiz.characterDescription,
+      },
+    });
+  } catch (error) {
+    console.error('Error submitting anime guess answer:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to submit answer',
+    });
+  }
+});
+
+// Get anime guess leaderboard
+router.get('/api/anime-guess/leaderboard', async (_req, res): Promise<void> => {
+  try {
+    const username = await reddit.getCurrentUsername();
+
+    if (!username) {
+      res.status(401).json({
+        status: 'error',
+        message: 'User not authenticated',
+      });
+      return;
+    }
+
+    // Get top players for anime guess mode
+    const leaderboard = await DatabaseService.getLeaderboardByPuzzleType('anime-guess', 20);
+
+    res.json({
+      status: 'success',
+      leaderboard,
+    });
+  } catch (error) {
+    console.error('Error getting anime guess leaderboard:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get leaderboard',
     });
   }
 });
@@ -1318,12 +1487,15 @@ router.post('/api/challenges/create', async (req, res): Promise<void> => {
     // Store challenge in Redis
     const challengeKey = `challenge:${challenge.id}`;
     const userChallengesKey = `user_challenges:${username}`;
-    
+
     // Set challenge data
-    await redis.set(challengeKey, JSON.stringify({
-      ...challenge,
-      createdBy: username,
-    }));
+    await redis.set(
+      challengeKey,
+      JSON.stringify({
+        ...challenge,
+        createdBy: username,
+      })
+    );
 
     // Add to user's challenges list (using JSON array instead of Redis sets)
     const userChallenges = await redis.get(userChallengesKey);
@@ -1340,6 +1512,7 @@ router.post('/api/challenges/create', async (req, res): Promise<void> => {
       if (!publicList.includes(challenge.id)) {
         publicList.push(challenge.id);
         await redis.set('public_challenges', JSON.stringify(publicList));
+        console.log(`✅ Added challenge ${challenge.id} to public challenges. Total public: ${publicList.length + 1}`);
       }
     }
 
@@ -1363,6 +1536,323 @@ router.post('/api/challenges/create', async (req, res): Promise<void> => {
   }
 });
 
+// Validate custom question endpoint
+router.post('/api/challenges/validate-question', async (req, res): Promise<void> => {
+  try {
+    const { question, correctAnswer, wrongAnswers, anime } = req.body;
+
+    // Basic validation
+    if (!question || !correctAnswer || !wrongAnswers || !anime) {
+      res.status(400).json({
+        isValid: false,
+        error: 'Missing required fields',
+      });
+      return;
+    }
+
+    if (wrongAnswers.length !== 3) {
+      res.status(400).json({
+        isValid: false,
+        error: 'Exactly 3 wrong answers are required',
+      });
+      return;
+    }
+
+    // Check for duplicate answers
+    const allAnswers = [correctAnswer, ...wrongAnswers];
+    const uniqueAnswers = new Set(allAnswers.map((a) => a.toLowerCase().trim()));
+    if (uniqueAnswers.size !== allAnswers.length) {
+      res.status(400).json({
+        isValid: false,
+        error: 'All answers must be unique',
+      });
+      return;
+    }
+
+    // Check answer lengths
+    if (correctAnswer.length > 100 || wrongAnswers.some((a) => a.length > 100)) {
+      res.status(400).json({
+        isValid: false,
+        error: 'Answers must be 100 characters or less',
+      });
+      return;
+    }
+
+    // Check question length
+    if (question.length > 200) {
+      res.status(400).json({
+        isValid: false,
+        error: 'Question must be 200 characters or less',
+      });
+      return;
+    }
+
+    // Enhanced content validation with anime-specific terminology
+    const questionLower = question.toLowerCase();
+    const animeLower = anime.toLowerCase();
+    const correctAnswerLower = correctAnswer.toLowerCase();
+    const allAnswersLower = [correctAnswer, ...wrongAnswers].map((a) => a.toLowerCase());
+
+    // Anime-specific terminology by series
+    const animeTerms: { [key: string]: string[] } = {
+      'naruto': [
+        'jutsu',
+        'ninja',
+        'hokage',
+        'chakra',
+        'sharingan',
+        'byakugan',
+        'rinnegan',
+        'tailed beast',
+        'jinchuriki',
+        'village',
+        'clan',
+        'sensei',
+      ],
+      'demon slayer': [
+        'demon',
+        'slayer',
+        'breathing',
+        'upper moon',
+        'lower moon',
+        'hashira',
+        'corps',
+        'sword',
+        'technique',
+        'pillar',
+        'muzan',
+        'tanjiro',
+        'nezuko',
+        'zenitsu',
+        'inosuke',
+        'giyu',
+        'rengoku',
+        'tengen',
+        'mitsuri',
+        'obanai',
+        'sanemi',
+        'gyomei',
+        'shinobu',
+        'akaza',
+        'doma',
+        'kokushibo',
+        'enmu',
+        'rui',
+        'kaigaku',
+      ],
+      'one piece': [
+        'pirate',
+        'devil fruit',
+        'haki',
+        'crew',
+        'marine',
+        'grand line',
+        'treasure',
+        'ship',
+        'captain',
+        'admiral',
+        'yonko',
+        'warlord',
+      ],
+      'attack on titan': [
+        'titan',
+        'wall',
+        'survey corps',
+        'garrison',
+        'military police',
+        'shifter',
+        'eldian',
+        'marley',
+        'founding',
+        'colossal',
+      ],
+      'jujutsu kaisen': [
+        'curse',
+        'sorcerer',
+        'technique',
+        'domain',
+        'expansion',
+        'grade',
+        'special grade',
+        'finger',
+        'sukuna',
+        'jujutsu',
+      ],
+      'my hero academia': [
+        'quirk',
+        'hero',
+        'villain',
+        'plus ultra',
+        'ua',
+        'pro hero',
+        'license',
+        'all might',
+        'deku',
+        'class 1-a',
+      ],
+      'death note': [
+        'death note',
+        'shinigami',
+        'kira',
+        'l',
+        'light',
+        'ryuk',
+        'misa',
+        'notebook',
+        'rule',
+        'investigation',
+      ],
+      'dragon ball': [
+        'saiyan',
+        'ki',
+        'kamehameha',
+        'dragon ball',
+        'wish',
+        'transformation',
+        'super saiyan',
+        'frieza',
+        'cell',
+        'buu',
+      ],
+      'bleach': [
+        'soul reaper',
+        'hollow',
+        'zanpakuto',
+        'bankai',
+        'shikai',
+        'soul society',
+        'arrancar',
+        'espada',
+        'quincy',
+        'fullbring',
+      ],
+    };
+
+    // General anime terms that apply to most series
+    const generalAnimeTerms = [
+      'character',
+      'protagonist',
+      'antagonist',
+      'main character',
+      'episode',
+      'season',
+      'arc',
+      'manga',
+      'anime',
+      'series',
+      'story',
+      'plot',
+      'battle',
+      'fight',
+      'power',
+      'ability',
+      'technique',
+      'skill',
+      'name',
+      'who',
+      'what',
+      'where',
+      'when',
+      'how',
+      'which',
+      'first',
+      'last',
+      'strongest',
+      'weakest',
+      'leader',
+      'member',
+      'team',
+      'group',
+      'organization',
+      'school',
+      'academy',
+      'training',
+      'master',
+      'student',
+      'teacher',
+      'friend',
+      'enemy',
+      'rival',
+      'ally',
+      'family',
+      'brother',
+      'sister',
+      'father',
+      'mother',
+      'son',
+      'daughter',
+    ];
+
+    // Get anime-specific terms for the current anime
+    const specificTerms = animeTerms[animeLower] || [];
+    const allRelevantTerms = [...specificTerms, ...generalAnimeTerms];
+
+    // Check if question contains anime name, specific terms, or character names from answers
+    const hasAnimeName = questionLower.includes(animeLower);
+    const hasSpecificTerms = allRelevantTerms.some((term) => questionLower.includes(term));
+    const hasCharacterNames = allAnswersLower.some((answer) => {
+      // Check if full answer is in question
+      if (questionLower.includes(answer)) return true;
+
+      // Check if any word from the answer is in question (for multi-word names)
+      const answerWords = answer.split(' ').filter((word) => word.length > 2); // Ignore short words like "the", "of"
+      return answerWords.some((word) => questionLower.includes(word));
+    });
+
+    // More lenient validation - question should have at least one indicator of anime relevance
+    if (!hasAnimeName && !hasSpecificTerms && !hasCharacterNames) {
+      res.status(400).json({
+        isValid: false,
+        error:
+          'Question should be more specific to the anime series. Try including character names, anime-specific terms, or the series name.',
+      });
+      return;
+    }
+
+    // Additional check: if it's a "who/what/which" question, it's likely anime-related
+    const questionWords = ['who', 'what', 'which', 'where', 'when', 'how', 'name'];
+    const hasQuestionWord = questionWords.some((word) => questionLower.includes(word));
+
+    // If it has a question word and mentions the anime or has character names, it's probably valid
+    if (hasQuestionWord && (hasAnimeName || hasCharacterNames)) {
+      // Skip further validation for question-type queries
+    } else if (!hasAnimeName && !hasSpecificTerms) {
+      // Only reject if it has no anime relevance at all
+      res.status(400).json({
+        isValid: false,
+        error:
+          'Question should be more specific to the anime series. Try including character names, anime-specific terms, or the series name.',
+      });
+      return;
+    }
+
+    // Provide helpful feedback about what made the question valid
+    let validationReasons = [];
+    if (hasAnimeName) validationReasons.push('mentions anime series');
+    if (hasSpecificTerms) validationReasons.push('contains anime-specific terminology');
+    if (hasCharacterNames) validationReasons.push('references character names');
+    if (hasQuestionWord) validationReasons.push('is a proper question format');
+
+    res.json({
+      isValid: true,
+      message: 'Question validated successfully',
+      reasons: validationReasons,
+      detectedTerms: {
+        animeName: hasAnimeName,
+        specificTerms: hasSpecificTerms,
+        characterNames: hasCharacterNames,
+        questionFormat: hasQuestionWord,
+      },
+    });
+  } catch (error) {
+    console.error('Error validating question:', error);
+    res.status(500).json({
+      isValid: false,
+      error: 'Failed to validate question',
+    });
+  }
+});
+
 router.get('/api/challenges/recent', async (_req, res): Promise<void> => {
   try {
     const username = await reddit.getCurrentUsername();
@@ -1378,7 +1868,7 @@ router.get('/api/challenges/recent', async (_req, res): Promise<void> => {
     const userChallengesKey = `user_challenges:${username}`;
     const userChallenges = await redis.get(userChallengesKey);
     const challengeIds = userChallenges ? JSON.parse(userChallenges) : [];
-    
+
     const challenges = [];
     for (const challengeId of challengeIds.slice(0, 10)) {
       const challengeData = await redis.get(`challenge:${challengeId}`);
@@ -1403,6 +1893,47 @@ router.get('/api/challenges/recent', async (_req, res): Promise<void> => {
   }
 });
 
+// Get public challenges endpoint
+router.get('/api/challenges/public', async (_req, res): Promise<void> => {
+  try {
+    const publicChallengesData = await redis.get('public_challenges');
+    const publicChallengeIds = publicChallengesData ? JSON.parse(publicChallengesData) : [];
+    
+    console.log(`📋 Fetching public challenges. Found ${publicChallengeIds.length} public challenge IDs:`, publicChallengeIds);
+
+    const challenges = [];
+    for (const challengeId of publicChallengeIds.slice(0, 20)) {
+      // Get up to 20 public challenges
+      const challengeData = await redis.get(`challenge:${challengeId}`);
+      if (challengeData) {
+        const challenge = JSON.parse(challengeData);
+        console.log(`📝 Found challenge: ${challenge.title} (public: ${challenge.isPublic})`);
+        if (challenge.isPublic) {
+          challenges.push(challenge);
+        }
+      } else {
+        console.log(`❌ No data found for challenge ID: ${challengeId}`);
+      }
+    }
+
+    console.log(`✅ Returning ${challenges.length} public challenges`);
+
+    // Sort by creation date (newest first)
+    challenges.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    res.json({
+      status: 'success',
+      challenges,
+    });
+  } catch (error) {
+    console.error('Error getting public challenges:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to get public challenges',
+    });
+  }
+});
+
 router.get('/api/dashboard/stats', async (_req, res): Promise<void> => {
   try {
     const username = await reddit.getCurrentUsername();
@@ -1419,8 +1950,9 @@ router.get('/api/dashboard/stats', async (_req, res): Promise<void> => {
     const userChallengesKey = `user_challenges:${username}`;
     const userChallenges = await redis.get(userChallengesKey);
     const challengeIds = userChallenges ? JSON.parse(userChallenges) : [];
-    
-    const challengesByAnime: { [anime: string]: { created: number; won: number; lost: number } } = {};
+
+    const challengesByAnime: { [anime: string]: { created: number; won: number; lost: number } } =
+      {};
     let totalCompleted = 0;
     let totalWins = 0;
     let totalScore = 0;
@@ -1432,7 +1964,7 @@ router.get('/api/dashboard/stats', async (_req, res): Promise<void> => {
       if (challengeData) {
         const challenge = JSON.parse(challengeData);
         const anime = challenge.anime || 'Mixed';
-        
+
         if (!challengesByAnime[anime]) {
           challengesByAnime[anime] = { created: 0, won: 0, lost: 0 };
         }
@@ -1441,17 +1973,19 @@ router.get('/api/dashboard/stats', async (_req, res): Promise<void> => {
         // Count completions and wins/losses
         if (challenge.completions) {
           totalCompleted += challenge.completions.length;
-          
+
           challenge.completions.forEach((completion: any) => {
             if (completion.username === username) {
               totalScore += completion.totalScore;
               scoreCount++;
-              
+
               // Determine if it's a win (completed successfully)
               if (completion.puzzleResults && completion.puzzleResults.length > 0) {
-                const correctAnswers = completion.puzzleResults.filter((r: any) => r.isCorrect).length;
+                const correctAnswers = completion.puzzleResults.filter(
+                  (r: any) => r.isCorrect
+                ).length;
                 const winThreshold = Math.ceil(completion.puzzleResults.length * 0.6); // 60% correct = win
-                
+
                 if (correctAnswers >= winThreshold) {
                   challengesByAnime[anime].won++;
                   totalWins++;
@@ -1471,8 +2005,9 @@ router.get('/api/dashboard/stats', async (_req, res): Promise<void> => {
       challengesByAnime,
       averageScore: scoreCount > 0 ? totalScore / scoreCount : 0,
       bestTime: 0, // TODO: Track best completion times
-      favoriteAnime: Object.keys(challengesByAnime).reduce((a, b) => 
-        challengesByAnime[a].created > challengesByAnime[b].created ? a : b, 'Mixed'
+      favoriteAnime: Object.keys(challengesByAnime).reduce(
+        (a, b) => (challengesByAnime[a].created > challengesByAnime[b].created ? a : b),
+        'Mixed'
       ),
       winRate: totalCompleted > 0 ? totalWins / totalCompleted : 0,
     };
@@ -1490,11 +2025,11 @@ router.get('/api/dashboard/stats', async (_req, res): Promise<void> => {
 router.get('/api/challenges/:shareCode', async (req, res): Promise<void> => {
   try {
     const { shareCode } = req.params;
-    
+
     // Find challenge by share code
     const publicChallengesData = await redis.get('public_challenges');
     const publicChallenges = publicChallengesData ? JSON.parse(publicChallengesData) : [];
-    
+
     for (const challengeId of publicChallenges) {
       const challengeData = await redis.get(`challenge:${challengeId}`);
       if (challengeData) {
@@ -1538,7 +2073,7 @@ router.post('/api/challenges/:challengeId/complete', async (req, res): Promise<v
 
     const challengeKey = `challenge:${challengeId}`;
     const challengeData = await redis.get(challengeKey);
-    
+
     if (!challengeData) {
       res.status(404).json({
         status: 'error',
@@ -1548,7 +2083,7 @@ router.post('/api/challenges/:challengeId/complete', async (req, res): Promise<v
     }
 
     const challenge = JSON.parse(challengeData);
-    
+
     // Add completion
     const completion = {
       username,
@@ -1570,10 +2105,72 @@ router.post('/api/challenges/:challengeId/complete', async (req, res): Promise<v
     // Update user stats
     await DatabaseService.incrementUserStat(username, 'challenges_completed');
 
+    // Calculate badge progress and award badges
+    const correctAnswers = puzzleResults.filter((result: any) => result.isCorrect).length;
+    const totalQuestions = puzzleResults.length;
+    const accuracy = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+    
+    // Determine badge level based on performance
+    let badgeLevel = 'bronze';
+    if (accuracy >= 90 && totalScore >= 800) {
+      badgeLevel = 'master';
+    } else if (accuracy >= 80 && totalScore >= 600) {
+      badgeLevel = 'platinum';
+    } else if (accuracy >= 70 && totalScore >= 400) {
+      badgeLevel = 'gold';
+    } else if (accuracy >= 60 && totalScore >= 200) {
+      badgeLevel = 'silver';
+    }
+
+    // Update badge for the specific anime
+    const badgeData = {
+      badge_level: badgeLevel,
+      puzzles_solved: correctAnswers,
+      total_score: totalScore,
+      accuracy: Math.round(accuracy),
+      challenges_completed: 1,
+      best_time: timeUsed
+    };
+
+    const updatedBadge = await DatabaseService.updateUserBadge(username, challenge.anime, badgeData);
+
+    // Update leaderboard
+    const leaderboardData = {
+      username,
+      score: totalScore,
+      anime: challenge.anime,
+      difficulty: challenge.difficulty,
+      completedAt: new Date().toISOString(),
+      timeUsed,
+      accuracy: Math.round(accuracy),
+      challengeId
+    };
+
+    // Add to anime-specific leaderboard
+    const leaderboardKey = `leaderboard:${challenge.anime}:${challenge.difficulty}`;
+    const existingLeaderboard = await redis.get(leaderboardKey);
+    const leaderboard = existingLeaderboard ? JSON.parse(existingLeaderboard) : [];
+    
+    // Add new entry
+    leaderboard.push(leaderboardData);
+    
+    // Sort by score (descending) and keep top 100
+    leaderboard.sort((a: any, b: any) => b.score - a.score);
+    const topLeaderboard = leaderboard.slice(0, 100);
+    
+    await redis.set(leaderboardKey, JSON.stringify(topLeaderboard));
+
+    console.log(`🏆 ${username} completed challenge ${challengeId}: ${totalScore} points, ${accuracy}% accuracy, ${badgeLevel} badge`);
+
     res.json({
       status: 'success',
       message: 'Challenge completion recorded',
       completion,
+      badge: updatedBadge,
+      leaderboardRank: topLeaderboard.findIndex((entry: any) => entry.username === username && entry.completedAt === leaderboardData.completedAt) + 1,
+      totalScore,
+      accuracy: Math.round(accuracy),
+      badgeLevel
     });
   } catch (error) {
     console.error('Error completing challenge:', error);

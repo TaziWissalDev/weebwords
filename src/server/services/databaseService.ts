@@ -375,7 +375,10 @@ export class DatabaseService {
     ] = await Promise.all([
       redis.get('home_stats:daily_top_scorer'),
       this.getGlobalLeaderboard(5),
-      redis.scard('all_users'),
+      (async () => {
+        const allUsersData = await redis.get('all_users');
+        return allUsersData ? JSON.parse(allUsersData).length : 0;
+      })(),
       redis.get(`daily_stats:${today}:puzzles_solved`),
       this.getMaxConcurrentPlayers()
     ]);
@@ -409,7 +412,14 @@ export class DatabaseService {
 
   // User registration tracking
   static async registerUser(username: string) {
-    await redis.sadd('all_users', username);
+    const allUsersData = await redis.get('all_users');
+    const allUsers = allUsersData ? JSON.parse(allUsersData) : [];
+    
+    if (!allUsers.includes(username)) {
+      allUsers.push(username);
+      await redis.set('all_users', JSON.stringify(allUsers));
+    }
+    
     await this.incrementDailyStats('new_users');
   }
 
@@ -419,10 +429,16 @@ export class DatabaseService {
     const userActivityKey = `user_activity:${username}`;
     
     // Add user to active players set
-    await redis.sadd(activePlayersKey, username);
+    const activePlayersData = await redis.get(activePlayersKey);
+    const activePlayers = activePlayersData ? JSON.parse(activePlayersData) : [];
+    
+    if (!activePlayers.includes(username)) {
+      activePlayers.push(username);
+      await redis.set(activePlayersKey, JSON.stringify(activePlayers));
+    }
     
     // Set user activity timestamp with 5-minute expiration
-    await redis.setex(userActivityKey, 300, Date.now().toString());
+    await redis.set(userActivityKey, Date.now().toString(), { expiration: new Date(Date.now() + 300 * 1000) });
     
     // Clean up inactive players (older than 5 minutes)
     await this.cleanupInactivePlayers();
@@ -430,23 +446,29 @@ export class DatabaseService {
 
   static async cleanupInactivePlayers() {
     const activePlayersKey = 'active_players';
-    const activeUsers = await redis.smembers(activePlayersKey);
+    const activePlayersData = await redis.get(activePlayersKey);
+    const activeUsers = activePlayersData ? JSON.parse(activePlayersData) : [];
     const now = Date.now();
     const fiveMinutesAgo = now - (5 * 60 * 1000);
+
+    const stillActiveUsers = [];
 
     for (const username of activeUsers) {
       const userActivityKey = `user_activity:${username}`;
       const lastActivity = await redis.get(userActivityKey);
       
-      if (!lastActivity || parseInt(lastActivity) < fiveMinutesAgo) {
-        await redis.srem(activePlayersKey, username);
+      if (lastActivity && parseInt(lastActivity) >= fiveMinutesAgo) {
+        stillActiveUsers.push(username);
       }
     }
+    
+    await redis.set(activePlayersKey, JSON.stringify(stillActiveUsers));
   }
 
   static async getActivePlayersCount(): Promise<number> {
     await this.cleanupInactivePlayers();
-    return await redis.scard('active_players');
+    const activePlayersData = await redis.get('active_players');
+    return activePlayersData ? JSON.parse(activePlayersData).length : 0;
   }
 
   static async getMaxConcurrentPlayers(): Promise<{
@@ -468,7 +490,7 @@ export class DatabaseService {
     
     // Update maximums if current is higher
     if (current > todayMaxNum) {
-      await redis.setex(todayMaxKey, 86400, current.toString()); // 24 hour expiration
+      await redis.set(todayMaxKey, current.toString(), { expiration: new Date(Date.now() + 86400 * 1000) }); // 24 hour expiration
     }
     
     if (current > allTimeMaxNum) {
@@ -485,20 +507,27 @@ export class DatabaseService {
   // Puzzle uniqueness tracking
   static async markPuzzleAsUsed(username: string, puzzleId: string) {
     const userPuzzlesKey = `user_puzzles:${username}`;
-    await redis.sadd(userPuzzlesKey, puzzleId);
-    // Set expiration to 7 days to allow puzzle reuse after a week
-    await redis.expire(userPuzzlesKey, 86400 * 7);
+    const userPuzzlesData = await redis.get(userPuzzlesKey);
+    const userPuzzles = userPuzzlesData ? JSON.parse(userPuzzlesData) : [];
+    
+    if (!userPuzzles.includes(puzzleId)) {
+      userPuzzles.push(puzzleId);
+      // Set expiration to 7 days to allow puzzle reuse after a week
+      await redis.set(userPuzzlesKey, JSON.stringify(userPuzzles), { expiration: new Date(Date.now() + 86400 * 7 * 1000) });
+    }
   }
 
   static async hasPuzzleBeenUsed(username: string, puzzleId: string): Promise<boolean> {
     const userPuzzlesKey = `user_puzzles:${username}`;
-    const result = await redis.sismember(userPuzzlesKey, puzzleId);
-    return result === 1;
+    const userPuzzlesData = await redis.get(userPuzzlesKey);
+    const userPuzzles = userPuzzlesData ? JSON.parse(userPuzzlesData) : [];
+    return userPuzzles.includes(puzzleId);
   }
 
   static async getUsedPuzzles(username: string): Promise<string[]> {
     const userPuzzlesKey = `user_puzzles:${username}`;
-    return await redis.smembers(userPuzzlesKey);
+    const userPuzzlesData = await redis.get(userPuzzlesKey);
+    return userPuzzlesData ? JSON.parse(userPuzzlesData) : [];
   }
 
   static async clearUsedPuzzles(username: string) {
@@ -635,5 +664,70 @@ export class DatabaseService {
     await redis.set(`user:${username}`, JSON.stringify(user));
     
     return user;
+  }
+
+  // Get leaderboard by puzzle type (for anime guess mode)
+  static async getLeaderboardByPuzzleType(puzzleType: string, limit: number = 20) {
+    const leaderboardKey = `puzzle_type_leaderboard:${puzzleType}`;
+    const leaderboard = await redis.get(leaderboardKey);
+    const data = leaderboard ? JSON.parse(leaderboard) : [];
+    return data.slice(0, limit);
+  }
+
+  // Update puzzle type leaderboard (for anime guess mode)
+  static async updatePuzzleTypeLeaderboard(username: string, puzzleType: string, score: number) {
+    const leaderboardKey = `puzzle_type_leaderboard:${puzzleType}`;
+    const userStatsKey = `puzzle_type_stats:${username}:${puzzleType}`;
+    
+    // Get or create user's puzzle type stats
+    const existingStats = await redis.get(userStatsKey);
+    const stats = existingStats ? JSON.parse(existingStats) : {
+      username,
+      puzzle_type: puzzleType,
+      total_score: 0,
+      puzzles_solved: 0,
+      average_score: 0,
+      best_score: 0,
+      last_played: new Date().toISOString()
+    };
+
+    // Update stats
+    stats.total_score += score;
+    stats.puzzles_solved += 1;
+    stats.average_score = Math.round(stats.total_score / stats.puzzles_solved);
+    stats.best_score = Math.max(stats.best_score, score);
+    stats.last_played = new Date().toISOString();
+
+    await redis.set(userStatsKey, JSON.stringify(stats));
+
+    // Update leaderboard
+    const leaderboard = await redis.get(leaderboardKey);
+    const leaderboardData = leaderboard ? JSON.parse(leaderboard) : [];
+    
+    // Remove existing entry
+    const filteredLeaderboard = leaderboardData.filter((entry: any) => entry.username !== username);
+    
+    // Add updated entry
+    filteredLeaderboard.push(stats);
+    
+    // Sort by average score, then by total score
+    filteredLeaderboard.sort((a: any, b: any) => {
+      if (a.average_score !== b.average_score) {
+        return b.average_score - a.average_score;
+      }
+      return b.total_score - a.total_score;
+    });
+
+    // Keep top 50
+    const topLeaderboard = filteredLeaderboard.slice(0, 50);
+    
+    // Update rank positions
+    topLeaderboard.forEach((entry: any, index: number) => {
+      entry.rank_position = index + 1;
+    });
+
+    await redis.set(leaderboardKey, JSON.stringify(topLeaderboard));
+
+    return stats;
   }
 }

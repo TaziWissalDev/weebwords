@@ -1,6 +1,12 @@
 {
   "$schema": "https://developers.reddit.com/schema/config-file.v1.json",
   "name": "weebwords",
+  "http": {
+    "domains": [
+      "api.openai.com",
+      "generativelanguage.googleapis.com"
+    ]
+  },
   "post": {
     "dir": "dist/client",
     "entrypoints": {

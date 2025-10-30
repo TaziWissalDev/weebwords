@@ -777,3 +777,179 @@
     margin-top: 0.5rem;
   }
 }
+
+/* New Splash Screen Animations */
+@keyframes glow {
+  0%, 100% { 
+    text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan), 0 0 30px var(--neon-cyan);
+  }
+  50% { 
+    text-shadow: 0 0 20px var(--neon-cyan), 0 0 30px var(--neon-cyan), 0 0 40px var(--neon-cyan), 0 0 50px var(--neon-purple);
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideIn {
+  0% { 
+    transform: translateY(30px); 
+    opacity: 0; 
+  }
+  100% { 
+    transform: translateY(0); 
+    opacity: 1; 
+  }
+}
+
+@keyframes bounceInUp {
+  0% {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(5px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes pixelFloat {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg); 
+  }
+  25% { 
+    transform: translateY(-8px) rotate(2deg); 
+  }
+  50% { 
+    transform: translateY(-15px) rotate(0deg); 
+  }
+  75% { 
+    transform: translateY(-8px) rotate(-2deg); 
+  }
+}
+
+@keyframes rainbowGlow {
+  0% { 
+    box-shadow: 0 0 20px #ff0080, 0 0 30px #ff0080, 0 0 40px #ff0080;
+  }
+  16% { 
+    box-shadow: 0 0 20px #ff8000, 0 0 30px #ff8000, 0 0 40px #ff8000;
+  }
+  33% { 
+    box-shadow: 0 0 20px #ffff00, 0 0 30px #ffff00, 0 0 40px #ffff00;
+  }
+  50% { 
+    box-shadow: 0 0 20px #80ff00, 0 0 30px #80ff00, 0 0 40px #80ff00;
+  }
+  66% { 
+    box-shadow: 0 0 20px #00ff80, 0 0 30px #00ff80, 0 0 40px #00ff80;
+  }
+  83% { 
+    box-shadow: 0 0 20px #0080ff, 0 0 30px #0080ff, 0 0 40px #0080ff;
+  }
+  100% { 
+    box-shadow: 0 0 20px #8000ff, 0 0 30px #8000ff, 0 0 40px #8000ff;
+  }
+}
+
+/* Animation Classes */
+.animate-glow {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.8s ease-out forwards;
+}
+
+.animate-bounce-in {
+  animation: bounceInUp 1s ease-out forwards;
+}
+
+.animate-pixel-float {
+  animation: pixelFloat 3s ease-in-out infinite;
+}
+
+.animate-rainbow-glow {
+  animation: rainbowGlow 3s linear infinite;
+}
+
+/* Enhanced Button Styles for Splash Screen */
+.pixel-button-large {
+  @apply relative overflow-hidden;
+  background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+  border: 2px solid var(--neon-cyan);
+  color: white;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.875rem;
+  padding: 1rem 2rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.pixel-button-large:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 245, 255, 0.4);
+}
+
+.pixel-button-large:active {
+  transform: translateY(0);
+}
+
+/* Splash Screen Specific Styles */
+.splash-hero-image {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 1rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.splash-hero-image::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pixel-pattern" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="5" height="5" fill="%23ffffff" opacity="0.1"/><rect x="5" y="5" width="5" height="5" fill="%23ffffff" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23pixel-pattern)"/></svg>');
+  opacity: 0.3;
+  animation: pixelFloat 4s ease-in-out infinite;
+}
+
+/* Audio Visualizer */
+.audio-visualizer {
+  display: flex;
+  align-items: end;
+  height: 40px;
+  gap: 2px;
+}
+
+.audio-bar {
+  width: 3px;
+  background: linear-gradient(to top, var(--neon-cyan), var(--neon-purple));
+  border-radius: 2px;
+  animation: audioWave 1s ease-in-out infinite;
+}
+
+@keyframes audioWave {
+  0%, 100% { height: 10px; }
+  50% { height: 30px; }
+}
+
+.audio-bar:nth-child(2) { animation-delay: 0.1s; }
+.audio-bar:nth-child(3) { animation-delay: 0.2s; }
+.audio-bar:nth-child(4) { animation-delay: 0.3s; }
+.audio-bar:nth-child(5) { animation-delay: 0.4s; }
